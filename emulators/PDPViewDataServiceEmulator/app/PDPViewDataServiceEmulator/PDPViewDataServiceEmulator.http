@@ -1,6 +1,0 @@
-@PDPViewDataServiceEmulator_HostAddress = http://localhost:5144
-
-GET {{PDPViewDataServiceEmulator_HostAddress}}/pdpviewdata/
-Accept: application/json
-
-###

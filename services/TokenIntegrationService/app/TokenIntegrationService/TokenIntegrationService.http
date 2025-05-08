@@ -1,6 +1,0 @@
-@TokenIntegrationService_HostAddress = http://localhost:5289
-
-GET {{TokenIntegrationService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
