@@ -33,6 +33,4 @@ public class PeiDataResponse
         if(pei == null || pei.Pei == null) return false;
         return _peiData.TryAdd(pei.Pei, pei);
     }
-
-    public IReadOnlyCollection<PeiDataModel> PeiData => _peiData.Values;
 }

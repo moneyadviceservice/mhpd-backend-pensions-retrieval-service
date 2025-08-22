@@ -86,7 +86,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
 
         if (!validator.IsValidGuid(userSessionId))
         {
-            logger.LogError("Unable to service request for sessionId [{sessionId}]: {reason}", userSessionId, Constants.ResponseType.InvalidSessionId);
+            logger.LogError("Unable to service request for sessionId [{SessionId}]: {Reason}", userSessionId, Constants.ResponseType.InvalidSessionId);
             return new BadRequestObjectResult(Constants.ResponseType.InvalidSessionId);
         }
 

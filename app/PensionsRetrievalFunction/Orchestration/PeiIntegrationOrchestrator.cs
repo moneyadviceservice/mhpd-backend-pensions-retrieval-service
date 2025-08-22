@@ -57,15 +57,17 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
             .WaitAndRetryAsync(
                 retryCount: _settings.RetryLimit,
                 sleepDurationProvider: _ => TimeSpan.FromSeconds(_settings.PeiPollingInterval),
-                onRetry: (_, _, attemptCount, _) =>
+                onRetry: (_, _, attemptCount, context) =>
                 {
-                    logger.LogWarning("Retry attempt #{AttemptCount} to fetch PEI data for user session {SessionId}", attemptCount, payload.UserSessionId);
+                    context[Constants.AttemptNumber] = ++attemptCount;
+                    logger.LogWarning("Attempt #{AttemptCount} to fetch PEI data for user session {SessionId}...", attemptCount, payload.UserSessionId);
                 }
             );
 
-        try
+
+        await retryPolicy.ExecuteAsync(async (context) =>
         {
-            await retryPolicy.ExecuteAsync(async () =>
+            try
             {
                 var response = await client.GetPeiDataAsync(new PeiRequestModel
                 {
@@ -75,7 +77,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                     UserSessionId = payload.UserSessionId!,
                     PeisId = payload.PeisId!,
                 });
-                
+
                 foreach (var pei in response.Peis!)
                 {
                     pei.RetrievalStatus = Constants.RetrievalStatus.Requested;
@@ -92,16 +94,18 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                         await repository.UpdatePensionsRetrievalRecordAsync(record);
                     }
                 }
-                return peiResponse;
-            });
+            }
+            catch (Exception error)
+            {
+                var attempt = context.TryGetValue(Constants.AttemptNumber, out var val) ? (int)val : 1;
+                logger.LogError(error, "Attempt #{Number} to retrieve PEI data for Id {PeisId} failed", attempt, payload.PeisId);
+            }
 
-            record.PeiRetrievalComplete = true;
-            await repository.UpdatePensionsRetrievalRecordAsync(record);
-        }
-        catch (Exception error)
-        {
-            logger.LogError(error, "Error retrieving PEI data for Id {PeisId}", payload.PeisId);
-        }
+            return peiResponse;
+        }, []);
+
+        record.PeiRetrievalComplete = true;
+        await repository.UpdatePensionsRetrievalRecordAsync(record);
 
         logger.LogWarning("Pei request orchestration complete");
     }
