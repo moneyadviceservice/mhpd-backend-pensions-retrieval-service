@@ -40,7 +40,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
     [OpenApiResponseWithoutBody(HttpStatusCode.GatewayTimeout, Description = "Gateway Timeout")]
     public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "pensions-retrieval-records")] HttpRequest req)
     {
-        return await ProcessRetrievalRecords(req, repository.GetRetrievalRecordAsync);
+        return await ProcessRetrievalRecords(req, "GET", repository.GetRetrievalRecordAsync);
     }
 
     [Function("DeleteRetrievalRecords")]
@@ -61,10 +61,10 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
     [OpenApiResponseWithoutBody(HttpStatusCode.NotFound, Description = "Not Found")]
     public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "pensions-retrieval-records")] HttpRequest req)
     {
-        return await ProcessRetrievalRecords(req, repository.DeleteRetrievalRecordsAsync);
+        return await ProcessRetrievalRecords(req, "DELETE", repository.DeleteRetrievalRecordsAsync);
     }
 
-    private async Task<IActionResult> ProcessRetrievalRecords<T>(HttpRequest req, Func<string, Task<T>> processor)
+    private async Task<IActionResult> ProcessRetrievalRecords<T>(HttpRequest req, string source, Func<string, Task<T>> processor)
     {
         var correlationId = req.Headers[HeaderConstants.CorrelationId].ToString();
 
@@ -82,7 +82,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
 
         using var scope = logger.BeginCorrelationScope(correlationId, Constants.LogSource.Http);
 
-        logger.LogRequest($"User session Id: {userSessionId}");
+        logger.LogRequestReceived($"{source} for user session Id: {userSessionId}");
 
         if (!validator.IsValidGuid(userSessionId))
         {
@@ -91,7 +91,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
         }
 
         var record = await processor(userSessionId);
-        logger.LogResponse(record);
+        logger.LogResponseSent(record);
 
         return EqualityComparer<T>.Default.Equals(record, default) ? new OkResult() : new OkObjectResult(record);
     }

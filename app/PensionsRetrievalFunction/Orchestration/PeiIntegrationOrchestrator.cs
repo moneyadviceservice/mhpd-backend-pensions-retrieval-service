@@ -1,4 +1,5 @@
-﻿using MhpdCommon.Models.Configuration;
+﻿using MhpdCommon.Extensions;
+using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
@@ -59,14 +60,16 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 sleepDurationProvider: _ => TimeSpan.FromSeconds(_settings.PeiPollingInterval),
                 onRetry: (_, _, attemptCount, context) =>
                 {
-                    context[Constants.AttemptNumber] = ++attemptCount;
-                    logger.LogWarning("Attempt #{AttemptCount} to fetch PEI data for user session {SessionId}...", attemptCount, payload.UserSessionId);
+                    context[Constants.AttemptNumber] = attemptCount + 1;
                 }
             );
 
 
         await retryPolicy.ExecuteAsync(async (context) =>
         {
+            var attempt = context.TryGetValue(Constants.AttemptNumber, out var val) ? (int)val : 1;
+            logger.LogWarning("Attempt #{AttemptCount} to fetch PEI data for user session {SessionId}...", attempt, payload.UserSessionId);
+
             try
             {
                 var response = await client.GetPeiDataAsync(new PeiRequestModel
@@ -97,7 +100,6 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
             }
             catch (Exception error)
             {
-                var attempt = context.TryGetValue(Constants.AttemptNumber, out var val) ? (int)val : 1;
                 logger.LogError(error, "Attempt #{Number} to retrieve PEI data for Id {PeisId} failed", attempt, payload.PeisId);
             }
 
