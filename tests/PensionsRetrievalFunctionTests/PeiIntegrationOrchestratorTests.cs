@@ -26,10 +26,6 @@ public class PeiIntegrationOrchestratorTests
 
     public PeiIntegrationOrchestratorTests()
     {
-        _logger = new ();
-        _repository = new();
-        _mockUserSessionDataRepository = new();
-        _messagingService = new Mock<IMessagingService>();
         _messagingService.Setup(mock => mock.SendMessageAsync(It.IsAny<PensionRequestPayload>(), OutboundQueue, It.IsAny<string>())).Verifiable();
 
         var testInstanceData = new UserSessionData
@@ -116,15 +112,30 @@ public class PeiIntegrationOrchestratorTests
 
         while (simulationAttempts > attempts)
         {
-            sequence = sequence.ReturnsAsync(CreateResponse(attempts % 2 == 0));
+            var withData = attempts % 2 == 0;
+            var isErrorOverride = attempts == 3; //make all 3rd attempts fail with error
+
+            sequence = sequence.ReturnsAsync(CreateResponse(withData, isErrorOverride));
             attempts++;
         }
 
         return httpClientMock;
     }
 
-    private static CdaPeisServiceResponseModel CreateResponse(bool withData)
+    private static CdaPeisServiceResponseModel CreateResponse(bool withData, bool isErrorOverride)
     {
+        if(isErrorOverride)
+        {
+            return new CdaPeisServiceResponseModel
+            {
+                Peis = null,
+                ResponseMessage = new ResponseMessage
+                {
+                    ResponseStatusCode = HttpStatusCode.InternalServerError
+                }
+            };
+        }
+
         var response = new List<PeiDataModel>
         {
             new() {
@@ -136,7 +147,7 @@ public class PeiIntegrationOrchestratorTests
         };
         return new CdaPeisServiceResponseModel
         {
-            Peis = withData ? response.ToArray() : [],
+            Peis = withData ? [.. response] : [],
             ResponseMessage = new ResponseMessage
             {
                 ResponseStatusCode = HttpStatusCode.OK,

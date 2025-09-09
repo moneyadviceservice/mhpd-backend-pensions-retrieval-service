@@ -2,6 +2,8 @@
 
 public static class Constants
 {
+    public const string AttemptNumber = "AttemptNumber";
+
     internal static class LogSource
     {
         public const string Queue = "Pensions Retrieval Message Queue";

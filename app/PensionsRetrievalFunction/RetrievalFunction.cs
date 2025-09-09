@@ -28,7 +28,7 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
     {
         if (!idValidator.IsValidGuid(message.CorrelationId))
         {
-            logger.LogCritical("Missing or Invalid correlationId: {correlationId}", message.CorrelationId);
+            logger.LogCritical("Missing or Invalid correlationId: {CorrelationId}", message.CorrelationId);
             await messageActions.DeadLetterMessageAsync(message, deadLetterReason: $"Missing or Invalid correlationId: {message.CorrelationId}");
             return;
         }
@@ -47,7 +47,7 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
         }
         catch (Exception error)
         {
-            logger.LogCritical(error, "{message}", error.Message);
+            logger.LogCritical(error, "{Message}", error.Message);
             await messageActions.DeadLetterMessageAsync(message, deadLetterReason: error.Message);
         }
     }
@@ -81,7 +81,7 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
     {
         var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], " +
             $"MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
-        logger.LogWarning("Message Details : {details} Body: {body}", logMessage, receivedMessage.Body);
+        logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
     }
 }
 
@@ -91,7 +91,7 @@ public static class RetrievalFunctionOpenApiSpec
     private const string Tag = "items";
 
     [Function("GetItem")]
-    [OpenApiOperation(operationId: "GetItem", tags: [Tag])]
+    [OpenApiOperation(operationId: "GetItem", Tag)]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string))]
     public static HttpResponseData Run([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
     {
