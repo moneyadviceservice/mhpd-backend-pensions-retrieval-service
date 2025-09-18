@@ -2,13 +2,13 @@ using MhpdCommon.Extensions;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Configurations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
 using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
 
@@ -24,7 +24,7 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.AddMhpdCosmosDb(hostContext.Configuration);
-        services.AddMhpdUtilities();
+        services.AddMhpdUtilities(hostContext.Configuration);
         services.AddMhpdHttpClients(hostContext.Configuration);
         services.AddIntegrationServices();
         services.AddMhpdServiceBusTools(hostContext.Configuration);
