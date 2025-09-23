@@ -42,7 +42,7 @@ public class PensionRetrievalRepository(IOptions<CosmosBusinessConfiguration> op
         return response.SingleOrDefault();
     }
 
-    public async Task<int> DeleteRetrievalRecordsAsync(string userSessionId)
+    public async Task<int?> DeleteRetrievalRecordsAsync(string userSessionId)
     {
         var container = client.GetContainer(_configuration.DatabaseId, _configuration.PensionsRetrievalContainer);
         var records = await GetMatchingRecordsAsync(userSessionId);

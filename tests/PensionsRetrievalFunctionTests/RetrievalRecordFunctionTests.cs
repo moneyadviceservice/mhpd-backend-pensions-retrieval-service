@@ -127,6 +127,7 @@ public class RetrievalRecordFunctionTests
         var correlationId = Guid.NewGuid().ToString();
         var request = new DefaultHttpContext().Request;
         request.Headers[HeaderConstants.UserSessionId] = userSessionId;
+        _repository.Setup(mock => mock.DeleteRetrievalRecordsAsync(It.IsAny<string>())).ReturnsAsync(0);
 
         if (withCorrelationHeader)
         {
