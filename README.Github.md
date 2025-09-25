@@ -13,7 +13,7 @@ The Pension Retrieval Service is an Azure Function app designed to initiate the 
 The service follows a modular architecture with clear separation of concerns. Key components include:
 
 - **Functions**: Implement Azure Functions that handle incoming HTTP requests and orchestrate responses.
-- **Models**: Define the data structures for requests and responses, including models for handling API data. [WIKI Models](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/13666058/Pensions+Retrieval+Record)
+- **Models**: Define the data structures for requests and responses, including models for handling API data.
 - **Repository**: Encapsulates the logic for data access, managing interactions with the Cosmos DB.
 - **Wiki Link**: [Pensions Retrieval Service](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/117768225/Pensions+Retrieval+Service)
 - **Architecture Diagram HLD**: [MHPD HL Architecture](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/13666036/High+Level+Architecture)
@@ -40,14 +40,14 @@ The Pension Retrieval Service is built using the following technologies:
 
 The Pension Retrieval Service has the following key service dependencies:
 
-- **[PEI Integration Service](https://dev.azure.com/moneyandpensionsservice/MaPS%20Digital/_git/mhpd-backend-pei-integration-service)**: Calls this service in to fetch the list of PEIs associated with a given Id.
+- **PEI Integration Service**: Calls this service in to fetch the list of PEIs associated with a given Id.
 ## Installation
 
 To set up the Pension Retrieval Service locally, follow these steps:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://moneyandpensionsservice@dev.azure.com/moneyandpensionsservice/MaPS%20Digital/_git/mhpd-backend-pensions-retrieval-service
+   git clone https://github.com/moneyadviceservice/mhpd-backend-pensions-retrieval-service.git
    cd app/PensionRetrievalService
 	```
 2. **Restore Dependencies**:
