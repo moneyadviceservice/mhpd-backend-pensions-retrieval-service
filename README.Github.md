@@ -15,8 +15,6 @@ The service follows a modular architecture with clear separation of concerns. Ke
 - **Functions**: Implement Azure Functions that handle incoming HTTP requests and orchestrate responses.
 - **Models**: Define the data structures for requests and responses, including models for handling API data.
 - **Repository**: Encapsulates the logic for data access, managing interactions with the Cosmos DB.
-- **Wiki Link**: [Pensions Retrieval Service](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/117768225/Pensions+Retrieval+Service)
-- **Architecture Diagram HLD**: [MHPD HL Architecture](https://mapswiki.atlassian.net/wiki/spaces/MPD/pages/13666036/High+Level+Architecture)
 
 ## Tech Stack
 
@@ -90,21 +88,6 @@ Unit tests are implemented to ensure the reliability of the service. To run the 
 cd tests
 dotnet test
 ```
-
-## Pipelines
-- infrastructure-deploy.yml
-  - Terraform infrastructure for the function apps and app services
-  - Pipeline name is 'MHPD-backend-infrastructure'
-- func-pensions-retrieval-deploy.yml
-  - Deploy .NET App to func-pensions-retrieval-<env>
-  - Pipeline name is 'mhpd-backend-pensions-retrieval-service-deploy'
-- pensions-retrieval-api-publish.yml
-  - Pipeline name is 'mhpd-backend-pensions-retrieval-service-api-publish'
-  - Exports the API spec to api-docs repo and bumps the version of the APIm resource
-- ci.yml
-  - Builds and tests the project
-  - Pipeline name is 'mhpd-backend-pensions-retrieval-service-ci'
-
 
 ## Contributing
 Submit a pull request or open an issue for any enhancements or bug fixes.
