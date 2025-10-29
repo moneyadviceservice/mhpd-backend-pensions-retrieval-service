@@ -1,7 +1,9 @@
-﻿using MhpdCommon.Models.Configuration;
+﻿using Castle.Core.Logging;
+using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PensionsRetrievalFunction.Repository;
@@ -42,7 +44,7 @@ public class PensionRetrievalRepositoryTests
 
         iterator.Setup(mock => mock.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(_readResponse.Object);
 
-        _repository = new PensionRetrievalRepository(options, client.Object);
+        _repository = new PensionRetrievalRepository(Mock.Of<ILogger<PensionRetrievalRepository>>(), options, client.Object);
     }
 
     [Theory]

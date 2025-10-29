@@ -2,11 +2,13 @@
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace PensionsRetrievalFunction.Repository;
 
-public class PensionRetrievalRepository(IOptions<CosmosBusinessConfiguration> options, CosmosClient client) : IPensionRetrievalRepository
+public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logger, 
+    IOptions<CosmosBusinessConfiguration> options, CosmosClient client) : IPensionRetrievalRepository
 {
     private readonly CosmosBusinessConfiguration _configuration = options.Value;
 
@@ -24,6 +26,7 @@ public class PensionRetrievalRepository(IOptions<CosmosBusinessConfiguration> op
                 partitionKey: new PartitionKey(record.UserSessionId)
             );
 
+            logger.LogWarning("Created new PensionsRetrievalRecord with id {RecordId} for user session {UserSessionId}", record.Id, record.UserSessionId);
             return writeResponse.Resource;
         }
 
@@ -39,7 +42,14 @@ public class PensionRetrievalRepository(IOptions<CosmosBusinessConfiguration> op
     public async Task<PensionsRetrievalRecord?> GetRetrievalRecordAsync(string userSessionId)
     {
         var response = await GetMatchingRecordsAsync(userSessionId);
-        return response.SingleOrDefault();
+        var result = response.SingleOrDefault();
+
+        if(result == null)
+        {
+            logger.LogWarning("No PensionsRetrievalRecord found for user session {UserSessionId}", userSessionId);
+        }
+
+        return result;
     }
 
     public async Task<int?> DeleteRetrievalRecordsAsync(string userSessionId)
