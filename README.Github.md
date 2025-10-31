@@ -103,3 +103,4 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 
 ### 🔧 Release 0.7.0 — 2025-11-03
 - Improved pension retrieval logging.
+- Added handling of delete on expired pension retrieval records.
