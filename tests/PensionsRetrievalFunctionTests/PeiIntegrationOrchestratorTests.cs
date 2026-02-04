@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿using Castle.DynamicProxy;
 using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
@@ -6,11 +6,15 @@ using MhpdCommon.Repository;
 using MhpdCommon.SharedHttpClient;
 using MhpdCommon.TokenValidation;
 using MhpdCommon.Utils;
+using Microsoft.AspNetCore.Builder.Extensions;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
+using System.Linq;
+using System.Net;
 using ResponseMessage = MhpdCommon.Models.MHPDModels.ResponseMessage;
 
 namespace PensionsRetrievalFunctionTests;
@@ -26,7 +30,7 @@ public class PeiIntegrationOrchestratorTests
 
     public PeiIntegrationOrchestratorTests()
     {
-        _messagingService.Setup(mock => mock.SendMessageAsync(It.IsAny<PensionRequestPayload>(), OutboundQueue, It.IsAny<string>())).Verifiable();
+        _messagingService.Setup(mock => mock.SendMessageAsync(It.IsAny<PensionRequestPayload>(), OutboundQueue, It.IsAny<string>(), It.IsAny<DateTimeOffset>())).Verifiable();
 
         var testInstanceData = new UserSessionData
         {
@@ -38,19 +42,15 @@ public class PeiIntegrationOrchestratorTests
             .ReturnsAsync(testInstanceData);
     }
 
-    [Theory]
-    [InlineData(4, 5, 3, 1, 2)]
-    [InlineData(7, 10, 6, 3, 4)]
-    [InlineData(9, 15, 8, 4, 5)]
-    [InlineData(12, 20, 11, 5, 6)]
-    public async Task WhenHttpClientIsExecutedWithRetryConfiguration_EndpointIsCalledAsExpected(
-        int callsToSimulate, int timeout, int expectedClientCallCount, int expectedMessagingCallCount, int expectedSaveCount)
+
+    [Fact]
+    public async Task WhenSchedulingMessages_ShouldQueueTheCorrectNumber()
     {
-        //Arrange
+        // Arrange
         var apiConfiguration = new PeiOrchestrationSettings
         {
-            PeiPollingInterval = 2,
-            PeiRetrievalDuration = timeout
+            PeiPollingInterval = 5,
+            PeiRetrievalDuration = 60
         };
 
         var sbConfiguration = new CommonServiceBusConfiguration
@@ -59,16 +59,23 @@ public class PeiIntegrationOrchestratorTests
             OutboundQueue = OutboundQueue
         };
 
-        var client = CreateHttpClientWithRetry(callsToSimulate);
+
+        var client = CreateHttpClientWithRetry(1);
 
         var apiOptions = Options.Create(apiConfiguration);
         var sbOptions = Options.Create(sbConfiguration);
+
+
+        var orchestrator = new PeiIntegrationOrchestrator(sbOptions, apiOptions, _messagingService.Object,
+            client.Object, _repository.Object, _logger.Object, _mockUserSessionDataRepository.Object);
+
+        var correlationId = Guid.NewGuid().ToString();
 
         var payload = new PensionRetrievalPayload
         {
             Iss = "Test ISS",
             PeisId = Guid.NewGuid().ToString(),
-            UserSessionId = Guid.NewGuid().ToString()
+            UserSessionId = correlationId
         };
 
         var record = new PensionsRetrievalRecord
@@ -80,24 +87,136 @@ public class PeiIntegrationOrchestratorTests
         };
 
         _repository.Setup(mock => mock.CreateRecordIfNotExistsAsync(It.IsAny<PensionRetrievalPayload>())).ReturnsAsync(record);
-        _repository.Setup(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>())).Verifiable();
+
+        // Act
+        var resultRecord = await orchestrator.ScheduleMessagesAsync(payload, correlationId);
+
+        // Assert
+        _messagingService.Verify(mock => mock.SendMessagesAsync(It.Is<OutboundServiceBusMessage<PensionRetrievalMessagePayload>[]>(messages => messages.Count() == 12), InboundQueue), Times.Once);
+        Assert.Equal(record, resultRecord);
+    }
+
+    [Fact]
+    public async Task WhenHttpClientIsExecutedWithRetryConfiguration_EndpointIsCalledAsExpected()
+    {
+        // Arrange
+        var apiConfiguration = new PeiOrchestrationSettings
+        {
+            PeiPollingInterval = 5,
+            PeiRetrievalDuration = 60
+        };
+
+        var sbConfiguration = new CommonServiceBusConfiguration
+        {
+            InboundQueue = InboundQueue,
+            OutboundQueue = OutboundQueue
+        };
+
+        var client = new Mock<IPeiServiceClient>();
+        client.Setup(mock => mock.GetPeiDataAsync(It.IsAny<PeiRequestModel>())).ReturnsAsync(CreateResponse(true, false));
+
+        var apiOptions = Options.Create(apiConfiguration);
+        var sbOptions = Options.Create(sbConfiguration);
+
+        var payload = new PensionRetrievalMessagePayload
+        {
+            Iss = "Test ISS",
+            PeisId = Guid.NewGuid().ToString(),
+            UserSessionId = Guid.NewGuid().ToString(),
+            AccessToken = "access_token",
+            AttemptNumber = 1
+        };
+
+        var record = new PensionsRetrievalRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            Iss = payload.Iss,
+            PeisId = payload.PeisId,
+            UserSessionId = payload.UserSessionId
+        };
+
+        _repository.Setup(mock => mock.GetRetrievalRecordAsync(payload.UserSessionId)).ReturnsAsync(record);
 
         var orchestrator = new PeiIntegrationOrchestrator(sbOptions, apiOptions, _messagingService.Object,
             client.Object, _repository.Object, _logger.Object, _mockUserSessionDataRepository.Object);
 
         var correlationId = Guid.NewGuid().ToString();
 
-        //Act
+        // Act
         await orchestrator.RunAsync(payload, correlationId);
 
-        //Assert
-        client.Verify(mock => mock.GetPeiDataAsync(It.Is<PeiRequestModel>(request => request.Iss == payload.Iss && 
-        request.PeisId == payload.PeisId && request.UserSessionId == payload.UserSessionId)), Times.Exactly(expectedClientCallCount));
+        // Assert
+        client.Verify(mock => mock.GetPeiDataAsync(It.Is<PeiRequestModel>(request => request.Iss == payload.Iss && request.PeisId == payload.PeisId && request.UserSessionId == payload.UserSessionId)), Times.Once);
+        _messagingService.Verify(mock => mock.SendMessagesAsync(It.Is<OutboundServiceBusMessage<PensionRequestPayload>[]>(messages => messages.Count() == 1 && messages.Single().CorrelationId == correlationId), OutboundQueue), Times.Once);
+        _repository.Verify(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Once);
+    }
 
-        _messagingService.Verify(mock => mock.SendMessageAsync(It.IsAny<PensionRequestPayload>(), OutboundQueue, correlationId),
-            Times.Exactly(expectedMessagingCallCount));
+    [Fact]
+    public async Task ScheduleAndProcessingShouldResultInPeiRetrievalCompletedStatus()
+    {
+        // Arrange
+        var apiConfiguration = new PeiOrchestrationSettings
+        {
+            PeiPollingInterval = 5,
+            PeiRetrievalDuration = 60
+        };
+        var sbConfiguration = new CommonServiceBusConfiguration
+        {
+            InboundQueue = InboundQueue,
+            OutboundQueue = OutboundQueue
+        };
 
-        _repository.Verify(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Exactly(expectedSaveCount));
+        var client = new Mock<IPeiServiceClient>(); 
+        client.Setup(mock => mock.GetPeiDataAsync(It.IsAny<PeiRequestModel>())).ReturnsAsync(CreateResponse(true, false));
+
+        var apiOptions = Options.Create(apiConfiguration);
+        var sbOptions = Options.Create(sbConfiguration);
+        var orchestrator = new PeiIntegrationOrchestrator(sbOptions, apiOptions, _messagingService.Object, client.Object, _repository.Object, _logger.Object, _mockUserSessionDataRepository.Object);
+        var correlationId = Guid.NewGuid().ToString();
+        var payload = new PensionRetrievalPayload
+        {
+            Iss = "Test ISS",
+            PeisId = Guid.NewGuid().ToString(),
+            UserSessionId = correlationId
+        };
+
+        var record = new PensionsRetrievalRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            Iss = payload.Iss,
+            PeisId = payload.PeisId,
+            UserSessionId = payload.UserSessionId
+        };
+        _repository.Setup(mock => mock.CreateRecordIfNotExistsAsync(It.IsAny<PensionRetrievalPayload>())).ReturnsAsync(record);
+
+        // Act 1
+        var resultRecord = await orchestrator.ScheduleMessagesAsync(payload, correlationId);
+
+        // Arrange
+        var sentMessages = _messagingService.Invocations.Where(invocation => invocation.Method.Name == nameof(_messagingService.Object.SendMessagesAsync)).SelectMany(invocation => invocation.Arguments.OfType<OutboundServiceBusMessage<PensionRetrievalMessagePayload>[]>().Single()).ToList();
+
+        var updatedRecordHistory = new List<PensionsRetrievalRecord>();
+        _repository.Setup(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>())).Callback<PensionsRetrievalRecord>(r =>
+        {
+            updatedRecordHistory.Add(new PensionsRetrievalRecord
+            {
+                PeiRetrievalComplete = r.PeiRetrievalComplete
+            });
+        }).Returns(Task.CompletedTask);
+        _repository.Setup(mock => mock.GetRetrievalRecordAsync(payload.UserSessionId)).ReturnsAsync(record);
+
+        Assert.True(sentMessages.Count == 12);
+
+        // Act 2
+        foreach (var message in sentMessages.OrderBy(m => m.ScheduledEnqueueTime))
+        {
+            await orchestrator.RunAsync(message.Payload, correlationId);
+        }
+
+        // Assert
+        // Only 1 unique record, so only 1 update, followed by the complete update on the last message
+        Assert.True(updatedRecordHistory.Count(r => !r.PeiRetrievalComplete) == 1);
+        Assert.True(updatedRecordHistory.Count(r => r.PeiRetrievalComplete) == 1);
     }
 
 

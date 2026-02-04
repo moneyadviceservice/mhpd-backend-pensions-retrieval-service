@@ -1,17 +1,18 @@
 using Azure.Messaging.ServiceBus;
+using Google.Protobuf.Reflection;
 using MhpdCommon.Extensions;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Utils;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
-using PensionsRetrievalFunction.Models;
-using PensionsRetrievalFunction.Orchestration;
-using System.Text;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System.Net;
+using PensionsRetrievalFunction.Models;
+using PensionsRetrievalFunction.Orchestration;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Text;
 
 namespace PensionsRetrievalFunction;
 
@@ -22,10 +23,17 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
 {
     [Function(nameof(RetrievalFunction))]
     public async Task Run(
-        [ServiceBusTrigger("%CommonServiceBusConfiguration:InboundQueue%", Connection = "ServiceBusConnectionstring")]
-        ServiceBusReceivedMessage message,
+        [ServiceBusTrigger("%CommonServiceBusConfiguration:InboundQueue%", Connection = "ServiceBusConnectionstring", IsBatched = true)]
+        ServiceBusReceivedMessage[] messages,
         ServiceBusMessageActions messageActions)
     {
+        var messageTasks = messages.Select(m => HandleMessageAsync(m, messageActions)).ToList();
+        await Task.WhenAll(messageTasks);
+    }
+
+    private async Task HandleMessageAsync(ServiceBusReceivedMessage message, ServiceBusMessageActions messageActions)
+    {
+        await Task.Yield();
         if (!idValidator.IsValidGuid(message.CorrelationId))
         {
             logger.LogCritical("Missing or Invalid correlationId: {CorrelationId}", message.CorrelationId);
@@ -39,11 +47,8 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
         try
         {
             var payload = ExtractAndValidateMessagePayload(message);
-
-            // Release the lock on the message
+            await orchestrator.RunAsync(payload!, message.CorrelationId);
             await messageActions.CompleteMessageAsync(message);
-
-            await orchestrator.RunAsync(payload, message.CorrelationId);
         }
         catch (Exception error)
         {
@@ -52,14 +57,14 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
         }
     }
 
-    private PensionRetrievalPayload ExtractAndValidateMessagePayload(ServiceBusReceivedMessage message)
+    private PensionRetrievalMessagePayload ExtractAndValidateMessagePayload(ServiceBusReceivedMessage message)
     {
         var messageBody = Encoding.UTF8.GetString(message.Body);
-        PensionRetrievalPayload? payload;
+        PensionRetrievalMessagePayload? payload;
 
         try
         {
-            payload = messageParser.ToPensionRetrievalPayload(messageBody);
+            payload = messageParser.ToPensionRetrievalMessagePayload(messageBody);
         }
         catch (AggregateException error)
         {
@@ -79,8 +84,13 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
 
     private void LogRequestMesage(ServiceBusReceivedMessage receivedMessage)
     {
-        var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], " +
-            $"MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
+        var enqueudTimespan = DateTimeOffset.UtcNow - receivedMessage.EnqueuedTime;
+        if (enqueudTimespan.TotalSeconds > 5)
+        {
+            logger.LogWarning("Message with MessageId: {MessageId}, CorrelationId: {CorrelationId} has been in the queue for {EnqueudTimespan}.", receivedMessage.MessageId, receivedMessage.CorrelationId, enqueudTimespan);
+        }
+
+        var logMessage = $"Message Received - CorrelationId:[{receivedMessage.CorrelationId}], MessageId: [{receivedMessage.MessageId}], ContentType: [{receivedMessage.ContentType}] {Environment.NewLine}";
         logger.LogWarning("Message Details : {Details} Body: {Body}", logMessage, receivedMessage.Body);
     }
 }

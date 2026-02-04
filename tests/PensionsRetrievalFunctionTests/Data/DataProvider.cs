@@ -22,8 +22,8 @@ internal static class DataProvider
         return reader.ReadToEnd();
     }
 
-    internal static PensionRetrievalPayload? GetPayload(string payloadFile)
+    internal static PensionRetrievalMessagePayload? GetPayload(string payloadFile)
     {
-        return JsonSerializer.Deserialize<PensionRetrievalPayload>(GetStream(payloadFile));
+        return JsonSerializer.Deserialize<PensionRetrievalMessagePayload>(GetStream(payloadFile));
     }
 }

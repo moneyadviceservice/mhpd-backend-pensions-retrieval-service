@@ -7,15 +7,18 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using PensionsRetrievalFunction;
 using PensionsRetrievalFunction.Models;
+using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
 using System.Net;
 
 namespace PensionsRetrievalFunctionTests;
+
 public class RetrievalRecordFunctionTests
 {
     private readonly Mock<IIdValidator> _idValidatorMock;
     private readonly Mock<ILogger<RetrievalRecordFunction>> _loggerMock;
-    private readonly Mock<IPensionRetrievalRepository> _repository;
+    private readonly Mock<IPensionRetrievalRepository> _repositoryMock;
+    private readonly Mock<IPeiIntegrationOrchestrator> _peiIntegrationOrchestratorMock;
     private readonly RetrievalRecordFunction _function;
 
     public RetrievalRecordFunctionTests()
@@ -25,11 +28,14 @@ public class RetrievalRecordFunctionTests
 
         _loggerMock = new Mock<ILogger<RetrievalRecordFunction>>();
 
-        _repository = new Mock<IPensionRetrievalRepository>();
-        _repository.Setup(mock => mock.GetRetrievalRecordAsync(It.IsAny<string>())).ReturnsAsync(new PensionsRetrievalRecord());
-        _repository.Setup(mock => mock.DeleteRetrievalRecordsAsync(It.IsAny<string>())).ReturnsAsync(2);
+        _repositoryMock = new Mock<IPensionRetrievalRepository>();
+        _repositoryMock.Setup(mock => mock.GetRetrievalRecordAsync(It.IsAny<string>())).ReturnsAsync(new PensionsRetrievalRecord());
+        _repositoryMock.Setup(mock => mock.DeleteRetrievalRecordsAsync(It.IsAny<string>())).ReturnsAsync(2);
 
-        _function = new RetrievalRecordFunction(_loggerMock.Object, _repository.Object, _idValidatorMock.Object);
+        _peiIntegrationOrchestratorMock = new Mock<IPeiIntegrationOrchestrator>();
+        _peiIntegrationOrchestratorMock.Setup(mock => mock.ScheduleMessagesAsync(It.IsAny<MhpdCommon.Models.MessageBodyModels.PensionRetrievalPayload>(), It.IsAny<string>())).ReturnsAsync(new PensionsRetrievalRecord());
+
+        _function = new RetrievalRecordFunction(_loggerMock.Object, _repositoryMock.Object, _idValidatorMock.Object, _peiIntegrationOrchestratorMock.Object);
     }
 
     [Theory]
@@ -58,7 +64,7 @@ public class RetrievalRecordFunctionTests
         var result = Assert.IsType<OkObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<PensionsRetrievalRecord>(result.Value);
-        _repository.Verify(mock => mock.GetRetrievalRecordAsync(userSessionId), Times.Once);
+        _repositoryMock.Verify(mock => mock.GetRetrievalRecordAsync(userSessionId), Times.Once);
     }
 
     [Theory]
@@ -90,7 +96,7 @@ public class RetrievalRecordFunctionTests
         var result = Assert.IsType<BadRequestObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal(Constants.ResponseType.InvalidSessionId, result.Value);
-        _repository.Verify(mock => mock.GetRetrievalRecordAsync(It.IsAny<string>()), Times.Never);
+        _repositoryMock.Verify(mock => mock.GetRetrievalRecordAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -114,7 +120,7 @@ public class RetrievalRecordFunctionTests
         var result = Assert.IsType<BadRequestObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal(Constants.ResponseType.InvalidCorrelationId, result.Value);
-        _repository.Verify(mock => mock.GetRetrievalRecordAsync(It.IsAny<string>()), Times.Never);
+        _repositoryMock.Verify(mock => mock.GetRetrievalRecordAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Theory]
@@ -127,7 +133,7 @@ public class RetrievalRecordFunctionTests
         var correlationId = Guid.NewGuid().ToString();
         var request = new DefaultHttpContext().Request;
         request.Headers[HeaderConstants.UserSessionId] = userSessionId;
-        _repository.Setup(mock => mock.DeleteRetrievalRecordsAsync(It.IsAny<string>())).ReturnsAsync(0);
+        _repositoryMock.Setup(mock => mock.DeleteRetrievalRecordsAsync(It.IsAny<string>())).ReturnsAsync(0);
 
         if (withCorrelationHeader)
         {
@@ -144,6 +150,6 @@ public class RetrievalRecordFunctionTests
         var result = Assert.IsType<OkObjectResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.IsType<int>(result.Value);
-        _repository.Verify(mock => mock.DeleteRetrievalRecordsAsync(userSessionId), Times.Once);
+        _repositoryMock.Verify(mock => mock.DeleteRetrievalRecordsAsync(userSessionId), Times.Once);
     }
 }

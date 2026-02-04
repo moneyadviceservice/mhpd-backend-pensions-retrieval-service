@@ -38,9 +38,9 @@ public class RetrievalFunctionTests
         _idValidatorMock.Setup(x => x.IsValidPeI(It.IsAny<string>())).Returns(false);
 
         var error = new AggregateException(new Exception("Bad Data"));
-        _messageParseMock.Setup(x => x.ToPensionRetrievalPayload(It.IsAny<string>())).Throws(error);
+        _messageParseMock.Setup(x => x.ToPensionRetrievalMessagePayload(It.IsAny<string>())).Throws(error);
 
-        _orchestratorMock.Setup(mock => mock.RunAsync(It.IsAny<PensionRetrievalPayload>(), It.IsAny<string>())).Verifiable();
+        _orchestratorMock.Setup(mock => mock.RunAsync(It.IsAny<PensionRetrievalMessagePayload>(), It.IsAny<string>())).Verifiable();
 
         _integrationServiceClientMock = new Mock<IPeiIntegrationOrchestrator>();
 
@@ -58,7 +58,7 @@ public class RetrievalFunctionTests
             body: new BinaryData("Test message"));
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         var reason = "Missing or Invalid correlationId:";
@@ -83,7 +83,7 @@ public class RetrievalFunctionTests
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _actionsMock.Verify(r => r.DeadLetterMessageAsync(message, null,
@@ -102,14 +102,14 @@ public class RetrievalFunctionTests
         var payload = DataProvider.GetPayload(file);
 
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
-        _messageParseMock.Setup(x => x.ToPensionRetrievalPayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToPensionRetrievalMessagePayload(It.IsAny<string>())).Returns(payload);
 
         var content = DataProvider.GetString(file);
         var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
             body: BinaryData.FromString(content), correlationId: Guid.NewGuid().ToString());
 
         // Act
-        await _function.Run(message, _actionsMock.Object);
+        await _function.Run([message], _actionsMock.Object);
 
         // Assert
         _actionsMock.Verify(r => r.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);

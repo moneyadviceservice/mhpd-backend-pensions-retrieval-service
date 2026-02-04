@@ -27,7 +27,7 @@
         ],
         "operationId": "GetItem",
         "responses": {
-          "200": {
+          200: {
             "description": "Payload of String",
             "content": {
               "application/json": {
@@ -41,6 +41,63 @@
       }
     },
     "/pensions-retrieval-records": {
+      "post": {
+        "summary": "Post Pensions Retrieval Record",
+        "description": "Post the pensions retrieval record. This will schedule the messages to be handled at the desired times to poll for new retrieval services",
+        "operationId": "post-pensions-retrieval-record-for-pension-owner-session",
+        "parameters": [
+          {
+            "name": "userSessionId",
+            "in": "header",
+            "description": "The unique id of pension owner session as issued by the requesting system",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mhpdCorrelationId",
+            "in": "header",
+            "description": "An Id with which to group all logging statements made during a single session",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          200: {
+            "description": "The OK response message containing pension retrieval record. Indicating the retrival has been queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          400: {
+            "description": "BadRequest"
+          },
+          401: {
+            "description": "Unauthorized"
+          },
+          403: {
+            "description": "Forbidden"
+          },
+          500: {
+            "description": "Internal Server Error"
+          },
+          502: {
+            "description": "BadGateway"
+          },
+          503: {
+            "description": "Service Unavailable"
+          },
+          504: {
+            "description": "Gateway Timeout"
+          }
+        }
+      },
       "get": {
         "summary": "Get Pensions Retrieval Record",
         "description": "Get the pensions retrieval record that contains the information on the state of a process to retrieve the pensions data for a user session from the PDP ecosystem",
@@ -65,7 +122,7 @@
           }
         ],
         "responses": {
-          "200": {
+          200: {
             "description": "The OK response message containing pension retrieval record.",
             "content": {
               "application/json": {
@@ -75,25 +132,25 @@
               }
             }
           },
-          "400": {
+          400: {
             "description": "BadRequest"
           },
-          "401": {
+          401: {
             "description": "Unauthorized"
           },
-          "403": {
+          403: {
             "description": "Forbidden"
           },
-          "500": {
+          500: {
             "description": "Internal Server Error"
           },
-          "502": {
+          502: {
             "description": "BadGateway"
           },
-          "503": {
+          503: {
             "description": "Service Unavailable"
           },
-          "504": {
+          504: {
             "description": "Gateway Timeout"
           }
         }
@@ -122,15 +179,15 @@
           }
         ],
         "responses": {
-          "204": {
+          204: {
             "description": "No Content"
           },
-          "404": {
+          404: {
             "description": "Not Found"
           }
         }
       }
     }
   },
-  "components": { }
+  "components": {}
 }
