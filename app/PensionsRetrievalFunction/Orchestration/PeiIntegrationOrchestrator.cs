@@ -48,7 +48,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
             return null;
         }
 
-        var messagesToSend = Enumerable.Range(0, peiOptions.Value.RetryLimit).Select(i => 
+        var messagesToSend = Enumerable.Range(0, peiOptions.Value.RetryLimit + 1).Select(i => 
                 new OutboundServiceBusMessage<PensionRetrievalMessagePayload>
                 {
                     Payload = new PensionRetrievalMessagePayload
@@ -118,7 +118,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
             await messagingService.SendMessagesAsync(messagesToSend.ToArray(), _serviceBusConfiguration.OutboundQueue!);
         }
 
-        if (payload.AttemptNumber == _settings.RetryLimit)
+        if (payload.AttemptNumber == _settings.RetryLimit + 1)
         {
             record!.PeiRetrievalComplete = true;
             recordUpdated = true;

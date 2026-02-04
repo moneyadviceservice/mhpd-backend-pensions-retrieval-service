@@ -43,14 +43,16 @@ public class PeiIntegrationOrchestratorTests
     }
 
 
-    [Fact]
-    public async Task WhenSchedulingMessages_ShouldQueueTheCorrectNumber()
+    [Theory]
+    [InlineData(5, 60, 13)]
+    [InlineData(5, 10, 3)]
+    public async Task WhenSchedulingMessages_ShouldQueueTheCorrectNumber(int interval, int duration, int expectedSent)
     {
         // Arrange
         var apiConfiguration = new PeiOrchestrationSettings
         {
-            PeiPollingInterval = 5,
-            PeiRetrievalDuration = 60
+            PeiPollingInterval = interval,
+            PeiRetrievalDuration = duration
         };
 
         var sbConfiguration = new CommonServiceBusConfiguration
@@ -92,7 +94,7 @@ public class PeiIntegrationOrchestratorTests
         var resultRecord = await orchestrator.ScheduleMessagesAsync(payload, correlationId);
 
         // Assert
-        _messagingService.Verify(mock => mock.SendMessagesAsync(It.Is<OutboundServiceBusMessage<PensionRetrievalMessagePayload>[]>(messages => messages.Count() == 12), InboundQueue), Times.Once);
+        _messagingService.Verify(mock => mock.SendMessagesAsync(It.Is<OutboundServiceBusMessage<PensionRetrievalMessagePayload>[]>(messages => messages.Count() == expectedSent), InboundQueue), Times.Once);
         Assert.Equal(record, resultRecord);
     }
 
@@ -205,7 +207,7 @@ public class PeiIntegrationOrchestratorTests
         }).Returns(Task.CompletedTask);
         _repository.Setup(mock => mock.GetRetrievalRecordAsync(payload.UserSessionId)).ReturnsAsync(record);
 
-        Assert.True(sentMessages.Count == 12);
+        Assert.True(sentMessages.Count == 13);
 
         // Act 2
         foreach (var message in sentMessages.OrderBy(m => m.ScheduledEnqueueTime))
