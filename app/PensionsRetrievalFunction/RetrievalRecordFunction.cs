@@ -89,13 +89,16 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
     [OpenApiResponseWithoutBody(HttpStatusCode.NotFound, Description = "Not Found")]
     public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "pensions-retrieval-records")] HttpRequest req)
     {
-        return await ProcessRetrievalRecords(req, "DELETE", repository.DeleteRetrievalRecordsAsync);
+        return await ProcessRetrievalRecords(req, "DELETE", async userSessionId =>
+        {
+            await repository.DeleteRetrievalRecordsAsync(userSessionId);
+            return default(int);
+        });
     }
 
     private async Task<IActionResult> ProcessRetrievalRecords<T>(HttpRequest req, string source, Func<string, Task<T>> processor)
     {
         var correlationId = req.Headers[HeaderConstants.CorrelationId].ToString();
-
         if (string.IsNullOrEmpty(correlationId))
         {
             correlationId = Guid.NewGuid().ToString();

@@ -11,5 +11,5 @@ public interface IPensionRetrievalRepository
 
     Task<PensionsRetrievalRecord?> GetRetrievalRecordAsync(string userSessionId);
 
-    Task<int?> DeleteRetrievalRecordsAsync(string userSessionId);
+    Task DeleteRetrievalRecordsAsync(string userSessionId);
 }
