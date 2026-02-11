@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "strict": true,
+    "paths": {
+      "@services/*": ["services/*"],
+      "@lib/*": ["lib/*"]
+    }
+  }
+}
