@@ -1,5 +1,6 @@
 using MhpdCommon.Extensions;
 using MhpdCommon.Models.MHPDModels;
+using MhpdCommon.OpenApi;
 using MhpdCommon.Repository;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
+using System.Reflection;
 
 var host = new HostBuilder()
     .ConfigureOpenApi()
@@ -56,7 +58,8 @@ var host = new HostBuilder()
                         Url = new Uri("https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/")
                     },
                 },
-                OpenApiVersion = Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums.OpenApiVersionType.V3
+                OpenApiVersion = Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums.OpenApiVersionType.V3,
+                DocumentFilters = [new PensionDataOpenApiFilter(Assembly.GetExecutingAssembly())]
             };
 
             return options;
@@ -64,4 +67,4 @@ var host = new HostBuilder()
     })
     .Build();
 
-host.Run();
+await host.RunAsync();
