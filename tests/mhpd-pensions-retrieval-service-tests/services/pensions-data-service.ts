@@ -1,6 +1,6 @@
 import { APIClient } from '@lib/api.lib';
 import { type APIRequestContext } from '@playwright/test';
-import { env } from 'node:process';
+import { env } from '@lib/env.lib';
 
 export interface PostPensionsDataHeaders {
   userSessionId: string;
@@ -24,7 +24,7 @@ interface PostPensionsDataRetrieval {
 
 export class PensionsDataService {
   protected readonly apiClient: APIClient;
-  protected readonly baseURL: string = env.BASE_URL_PDS as string;
+  protected readonly baseURL = env.BASE_URL_PDS;
 
   constructor(request: APIRequestContext) {
     this.apiClient = new APIClient(request, this.baseURL);
