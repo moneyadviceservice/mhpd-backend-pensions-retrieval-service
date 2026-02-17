@@ -22,6 +22,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
         Summary = "Post Pensions Retrieval Record",
         Description = "Post the pensions retrieval record. This will schedule the messages to be handled at the desired times to poll for new retrieval services")]
     [PensionDataOpenApi]
+    [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object), Description = "The OK response message containing pension retrieval record. Indicating the retrival has been queued.")]
     public async Task<IActionResult> PostAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "pensions-retrieval-records")] HttpRequest req, [Microsoft.Azure.Functions.Worker.Http.FromBody] MhpdCommon.Models.MessageBodyModels.PensionRetrievalPayload payload)
     {
         return await ProcessRetrievalRecords(req, "POST", (userSessionId) => peiIntegrationOrchestrator.ScheduleMessagesAsync(payload, userSessionId));
@@ -33,6 +34,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
         Summary = "Get Pensions Retrieval Record",
         Description = "Get the pensions retrieval record that contains the information on the state of a process to retrieve the pensions data for a user session from the PDP ecosystem")]
     [PensionDataOpenApi]
+    [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object), Description = "The OK response message containing pension retrieval record.")]
     public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "pensions-retrieval-records")] HttpRequest req)
     {
         return await ProcessRetrievalRecords(req, "GET", repository.GetRetrievalRecordAsync);

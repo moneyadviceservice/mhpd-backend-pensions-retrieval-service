@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:7071"
+      "url": "http://localhost:7123"
     }
   ],
   "paths": {
@@ -27,7 +27,7 @@
         ],
         "operationId": "GetItem",
         "responses": {
-          200: {
+          "200": {
             "description": "Payload of String",
             "content": {
               "application/json": {
@@ -52,7 +52,8 @@
             "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -60,12 +61,13 @@
             "in": "header",
             "description": "An Id with which to group all logging statements made during a single session",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
-          200: {
+          "200": {
             "description": "The OK response message containing pension retrieval record. Indicating the retrival has been queued.",
             "content": {
               "application/json": {
@@ -75,26 +77,26 @@
               }
             }
           },
-          400: {
-            "description": "BadRequest"
-          },
-          401: {
-            "description": "Unauthorized"
-          },
-          403: {
-            "description": "Forbidden"
-          },
-          500: {
+          "500": {
             "description": "Internal Server Error"
           },
-          502: {
-            "description": "BadGateway"
+          "502": {
+            "description": "Bad Gateway"
           },
-          503: {
+          "503": {
             "description": "Service Unavailable"
           },
-          504: {
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "504": {
             "description": "Gateway Timeout"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
@@ -109,7 +111,8 @@
             "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -117,12 +120,13 @@
             "in": "header",
             "description": "An Id with which to group all logging statements made during a single session",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
-          200: {
+          "200": {
             "description": "The OK response message containing pension retrieval record.",
             "content": {
               "application/json": {
@@ -132,26 +136,26 @@
               }
             }
           },
-          400: {
-            "description": "BadRequest"
-          },
-          401: {
-            "description": "Unauthorized"
-          },
-          403: {
-            "description": "Forbidden"
-          },
-          500: {
+          "500": {
             "description": "Internal Server Error"
           },
-          502: {
-            "description": "BadGateway"
+          "502": {
+            "description": "Bad Gateway"
           },
-          503: {
+          "503": {
             "description": "Service Unavailable"
           },
-          504: {
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "504": {
             "description": "Gateway Timeout"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
@@ -166,7 +170,8 @@
             "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -174,15 +179,16 @@
             "in": "header",
             "description": "An Id with which to group all logging statements made during a single session",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
-          204: {
+          "204": {
             "description": "No Content"
           },
-          404: {
+          "404": {
             "description": "Not Found"
           }
         }
