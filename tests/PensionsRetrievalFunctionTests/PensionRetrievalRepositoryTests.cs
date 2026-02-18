@@ -35,12 +35,17 @@ public class PensionRetrievalRepositoryTests
         client.Setup(mock => mock.GetContainer(configuration.DatabaseId, configuration.PensionsRetrievalContainer))
             .Returns(_container.Object);
 
-        _container.Setup(mock => mock.GetItemQueryIterator<PensionsRetrievalRecord>(It.IsAny<QueryDefinition>(),
-            It.IsAny<string>(), It.IsAny<QueryRequestOptions>())).Returns(iterator.Object);
-        _container.Setup(mock => mock.CreateItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<PartitionKey>(),
-            It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>())).ReturnsAsync(_writeResponse.Object).Verifiable();
-        _container.Setup(mock => mock.ReplaceItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<string>(), It.IsAny<PartitionKey>(),
-            It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>())).ReturnsAsync(_writeResponse.Object).Verifiable();
+        _container.Setup(mock => mock.GetItemQueryIterator<PensionsRetrievalRecord>(It.IsAny<QueryDefinition>(), It.IsAny<string>(), It.IsAny<QueryRequestOptions>()))
+            .Returns(iterator.Object);
+        _container.Setup(mock => mock.CreateItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_writeResponse.Object)
+            .Verifiable();
+        _container.Setup(mock => mock.ReplaceItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_writeResponse.Object)
+            .Verifiable();
+        _container.Setup(mock => mock.DeleteAllItemsByPartitionKeyStreamAsync(It.IsAny<PartitionKey>(), null, default))
+            .ReturnsAsync(new Microsoft.Azure.Cosmos.ResponseMessage(System.Net.HttpStatusCode.OK))
+            .Verifiable();
 
         iterator.Setup(mock => mock.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(_readResponse.Object);
 
@@ -107,27 +112,16 @@ public class PensionRetrievalRepositoryTests
 
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task WhenRecordIsDeleted_DatabaseResultIsCorrect(bool isRecordInDatabase)
+    [Fact]
+    public async Task DeleteRetrievalRecordsAsync_ShouldCallDeleteAllItemsByPartitionKeyStreamAsyncWithPartitionKey()
     {
         //Arrange
-        List<PensionsRetrievalRecord> records = [];
-
-        if (isRecordInDatabase)
-        {
-            records.Add(new PensionsRetrievalRecord());
-            records.Add(new PensionsRetrievalRecord());
-        }
-
-        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
-        _readResponse.Setup(mock => mock.Count).Returns(records.Count);
+        var userSessionId = Guid.NewGuid().ToString();
 
         //Act
-        var count = await _repository.DeleteRetrievalRecordsAsync(Guid.NewGuid().ToString());
+        await _repository.DeleteRetrievalRecordsAsync(userSessionId);
 
         //Assert
-        Assert.Equal(records.Count, count);
+        _container.Verify(c => c.DeleteAllItemsByPartitionKeyStreamAsync(It.Is<PartitionKey>(pk => pk == new PartitionKey(userSessionId)), null, default), Times.Once);
     }
 }

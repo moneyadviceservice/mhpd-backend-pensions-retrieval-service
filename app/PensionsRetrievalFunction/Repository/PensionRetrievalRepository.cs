@@ -7,21 +7,19 @@ using Microsoft.Extensions.Options;
 
 namespace PensionsRetrievalFunction.Repository;
 
-public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logger, 
-    IOptions<CosmosBusinessConfiguration> options, CosmosClient client) : IPensionRetrievalRepository
+public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logger, IOptions<CosmosBusinessConfiguration> cosmosBusinessConfiguration, CosmosClient cosmosClient) 
+    : IPensionRetrievalRepository
 {
-    private readonly CosmosBusinessConfiguration _configuration = options.Value;
+    private readonly Container _container = cosmosClient.GetContainer(cosmosBusinessConfiguration.Value.DatabaseId, cosmosBusinessConfiguration.Value.PensionsRetrievalContainer);
 
     public async Task<PensionsRetrievalRecord?> CreateRecordIfNotExistsAsync(PensionRetrievalPayload payload)
     {
         var response = await GetMatchingRecordsAsync(payload.UserSessionId!);
-        var container = client.GetContainer(_configuration.DatabaseId, _configuration.PensionsRetrievalContainer);
-
         if(response.Count == 0)
         {
             var record = CreateRecord(payload);
 
-            var writeResponse = await container.CreateItemAsync(
+            var writeResponse = await _container.CreateItemAsync(
                 item: record,
                 partitionKey: new PartitionKey(record.UserSessionId)
             );
@@ -33,10 +31,9 @@ public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logg
         return null;
     }
 
-    public async Task UpdatePensionsRetrievalRecordAsync(PensionsRetrievalRecord record)
+    public Task UpdatePensionsRetrievalRecordAsync(PensionsRetrievalRecord record)
     {
-        var container = client.GetContainer(_configuration.DatabaseId, _configuration.PensionsRetrievalContainer);
-        await container.ReplaceItemAsync(record, record.Id, new PartitionKey(record.UserSessionId), null, default);
+        return _container.ReplaceItemAsync(record, record.Id, new PartitionKey(record.UserSessionId), null, default);
     }
 
     public async Task<PensionsRetrievalRecord?> GetRetrievalRecordAsync(string userSessionId)
@@ -52,27 +49,25 @@ public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logg
         return result;
     }
 
-    public async Task<int?> DeleteRetrievalRecordsAsync(string userSessionId)
+    public async Task DeleteRetrievalRecordsAsync(string userSessionId)
     {
-        var container = client.GetContainer(_configuration.DatabaseId, _configuration.PensionsRetrievalContainer);
-        var records = await GetMatchingRecordsAsync(userSessionId);
-
-        foreach (var record in records)
+        var response = await _container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey(userSessionId));
+        if (!response.IsSuccessStatusCode)
         {
-            await container.DeleteItemAsync<RetrievedPensionRecord>(record.Id, new PartitionKey(record.UserSessionId));
+            throw new CosmosException(
+                response.ErrorMessage,
+                response.StatusCode,
+                0,
+                response.Headers.ActivityId,
+                response.Headers.RequestCharge);
         }
-
-        return records.Count;
     }
 
     private async Task<FeedResponse<PensionsRetrievalRecord>> GetMatchingRecordsAsync(string userSessionId)
     {
         var query = new QueryDefinition("SELECT TOP 1 * FROM c WHERE c.userSessionId = @partitionKey")
                 .WithParameter("@partitionKey", userSessionId);
-
-        var container = client.GetContainer(_configuration.DatabaseId, _configuration.PensionsRetrievalContainer);
-        var iterator = container.GetItemQueryIterator<PensionsRetrievalRecord>(query);
-
+        var iterator = _container.GetItemQueryIterator<PensionsRetrievalRecord>(query);
         return await iterator.ReadNextAsync();
     }
 
