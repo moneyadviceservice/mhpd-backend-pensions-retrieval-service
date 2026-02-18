@@ -104,3 +104,15 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 ### 🔧 Release 0.7.0 — 2025-11-03
 - Improved pension retrieval logging.
 - Added handling of delete on expired pension retrieval records.
+
+### 🔧 Release 0.9.0 — 2026-02-12
+- New api endpoint added to orchestrate the new retrieval process.
+- Individual messages are sent out per poll to cda and the state loaded per message instead of a long running single message which would leave the service idle.
+- Messages sent in batches and scheduled
+- Package updated to benefit from the other changes in common
+- Handle messages in batches
+- Batching and concurrency configurations
+- Additional logging
+- Service to communicate with internal services directly
+- Service network rules changed to allow traffic from other apps on the vnet
+
