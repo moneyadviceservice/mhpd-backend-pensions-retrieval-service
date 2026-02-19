@@ -1,6 +1,6 @@
 using MhpdCommon.Constants;
 using MhpdCommon.Extensions;
-using MhpdCommon.OpenApi;
+using MhpdCommon.Models.OpenApi;
 using MhpdCommon.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

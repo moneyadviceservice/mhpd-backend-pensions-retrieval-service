@@ -1,6 +1,6 @@
 using MhpdCommon.Extensions;
 using MhpdCommon.Models.MHPDModels;
-using MhpdCommon.OpenApi;
+using MhpdCommon.Models.OpenApi;
 using MhpdCommon.Repository;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
