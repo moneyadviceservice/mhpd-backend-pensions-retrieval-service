@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:7123"
+      "url": "http://localhost:7071"
     }
   ],
   "paths": {
@@ -77,8 +77,14 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden"
+          },
           "500": {
             "description": "Internal Server Error"
+          },
+          "401": {
+            "description": "Unauthorized"
           },
           "502": {
             "description": "Bad Gateway"
@@ -89,14 +95,8 @@
           "400": {
             "description": "Bad Request"
           },
-          "403": {
-            "description": "Forbidden"
-          },
           "504": {
             "description": "Gateway Timeout"
-          },
-          "401": {
-            "description": "Unauthorized"
           }
         }
       },
@@ -136,8 +136,14 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden"
+          },
           "500": {
             "description": "Internal Server Error"
+          },
+          "401": {
+            "description": "Unauthorized"
           },
           "502": {
             "description": "Bad Gateway"
@@ -148,14 +154,8 @@
           "400": {
             "description": "Bad Request"
           },
-          "403": {
-            "description": "Forbidden"
-          },
           "504": {
             "description": "Gateway Timeout"
-          },
-          "401": {
-            "description": "Unauthorized"
           }
         }
       },
