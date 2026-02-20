@@ -1,0 +1,2 @@
+cd tests/mhpd-pensions-retrieval-service-tests || exit 1
+npx lint-staged

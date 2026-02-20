@@ -1,0 +1,18 @@
+{
+  "name": "mhpd-backend-pensions-retrieval-service",
+  "version": "1.0.0",
+  "description": "The Pension Retrieval Service is an Azure Function app designed to initiate the retrieval of PEIs from external sources. It provides a reliable interface for making requests and processing responses related to pension data. It accommodates slowly-arriving data by implementing a retry policy over a configurable amount of time.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
