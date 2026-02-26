@@ -77,26 +77,26 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden"
+          "401": {
+            "description": "Unauthorized"
+          },
+          "400": {
+            "description": "Bad Request"
           },
           "500": {
             "description": "Internal Server Error"
           },
-          "401": {
-            "description": "Unauthorized"
+          "504": {
+            "description": "Gateway Timeout"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "502": {
             "description": "Bad Gateway"
           },
           "503": {
             "description": "Service Unavailable"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "504": {
-            "description": "Gateway Timeout"
           }
         }
       },
@@ -136,26 +136,26 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden"
+          "401": {
+            "description": "Unauthorized"
+          },
+          "400": {
+            "description": "Bad Request"
           },
           "500": {
             "description": "Internal Server Error"
           },
-          "401": {
-            "description": "Unauthorized"
+          "504": {
+            "description": "Gateway Timeout"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "502": {
             "description": "Bad Gateway"
           },
           "503": {
             "description": "Service Unavailable"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "504": {
-            "description": "Gateway Timeout"
           }
         }
       },
