@@ -82,51 +82,56 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
             return;
         }
 
-        var response = await client.GetPeiDataAsync(new PeiRequestModel
-        {
-            Iss = payload.Iss!,
-            Rpt = peiResponse.Rpt!, // RPT == Access_token
-            CorrelationId = correlationId,
-            UserSessionId = payload.UserSessionId!,
-            PeisId = payload.PeisId!,
-        });
-
-        var fetchedPeis = record.PeiData.Select(p => p.Pei).ToHashSet();
         var recordUpdated = false;
-        var messagesToSend = new List<OutboundServiceBusMessage<PensionRequestPayload>>();
-        foreach (var pei in response.Peis!.Where(peis => !fetchedPeis.Contains(peis.Pei)))
+        try
         {
-            pei.RetrievalStatus = Constants.RetrievalStatus.Requested;
-            pei.RetrievalRequestedTimestamp = DateTime.UtcNow;
-
-            if (peiResponse.TryAdd(pei))
+            var response = await client.GetPeiDataAsync(new PeiRequestModel
             {
-                var message = CreateRequestPayload(pei, record);
-                logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
-                messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
+                Iss = payload.Iss!,
+                Rpt = peiResponse.Rpt!, // RPT == Access_token
+                CorrelationId = correlationId,
+                UserSessionId = payload.UserSessionId!,
+                PeisId = payload.PeisId!,
+            });
+
+            var fetchedPeis = record.PeiData.Select(p => p.Pei).ToHashSet();
+            var messagesToSend = new List<OutboundServiceBusMessage<PensionRequestPayload>>();
+            foreach (var pei in response.Peis!.Where(peis => !fetchedPeis.Contains(peis.Pei)))
+            {
+                pei.RetrievalStatus = Constants.RetrievalStatus.Requested;
+                pei.RetrievalRequestedTimestamp = DateTime.UtcNow;
+
+                if (peiResponse.TryAdd(pei))
                 {
-                    Payload = message,
-                    CorrelationId = correlationId
-                });
-                record!.PeiData.Add(pei);
-                recordUpdated = true;
+                    var message = CreateRequestPayload(pei, record);
+                    logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
+                    messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
+                    {
+                        Payload = message,
+                        CorrelationId = correlationId
+                    });
+                    record!.PeiData.Add(pei);
+                    recordUpdated = true;
+                }
+            }
+
+            if (messagesToSend.Count > 0)
+            {
+                await messagingService.SendMessagesAsync(messagesToSend.ToArray(), _serviceBusConfiguration.OutboundQueue!);
             }
         }
-
-        if (messagesToSend.Count > 0)
+        finally
         {
-            await messagingService.SendMessagesAsync(messagesToSend.ToArray(), _serviceBusConfiguration.OutboundQueue!);
-        }
+            if (payload.AttemptNumber == _settings.RetryLimit + 1)
+            {
+                record!.PeiRetrievalComplete = true;
+                recordUpdated = true;
+            }
 
-        if (payload.AttemptNumber == _settings.RetryLimit + 1)
-        {
-            record!.PeiRetrievalComplete = true;
-            recordUpdated = true;
-        }
-
-        if (recordUpdated)
-        {
-            await repository.UpdatePensionsRetrievalRecordAsync(record);
+            if (recordUpdated)
+            {
+                await repository.UpdatePensionsRetrievalRecordAsync(record);
+            }
         }
     }
 

@@ -1,9 +1,5 @@
 {
   "version": "2.0",
-  "concurrency": {
-    "dynamicConcurrencyEnabled": true,
-    "snapshotPersistenceEnabled": true
-  },
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
@@ -18,8 +14,12 @@
       "routePrefix": ""
     },
     "serviceBus": {
+      "prefetchCount": 130,
+      "messageHandlerOptions": {
+        "maxConcurrentCalls": 32
+      },
       "batchOptions": {
-        "maxMessageCount": 100,
+        "maxMessageCount": 130,
         "operationTimeout": "00:00:01",
         "autoComplete": false
       }

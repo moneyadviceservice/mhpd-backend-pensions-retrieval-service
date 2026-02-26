@@ -1,16 +1,16 @@
 using MhpdCommon.Constants;
 using MhpdCommon.Extensions;
+using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Models.OpenApi;
 using MhpdCommon.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using PensionsRetrievalFunction.Models;
 using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Net;
 
 namespace PensionsRetrievalFunction;
@@ -18,11 +18,12 @@ namespace PensionsRetrievalFunction;
 public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IPensionRetrievalRepository repository, IIdValidator validator, IPeiIntegrationOrchestrator peiIntegrationOrchestrator)
 {
     [Function("PostRetrievalRecords")]
-    [OpenApiOperation(operationId: "post-pensions-retrieval-record-for-pension-owner-session",
+    [SwaggerOperation(
+        OperationId = "post-pensions-retrieval-record-for-pension-owner-session",
         Summary = "Post Pensions Retrieval Record",
         Description = "Post the pensions retrieval record. This will schedule the messages to be handled at the desired times to poll for new retrieval services")]
     [PensionDataOpenApi]
-    [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object), Description = "The OK response message containing pension retrieval record. Indicating the retrival has been queued.")]
+    [SwaggerResponse((int)HttpStatusCode.OK, Description = "The OK response message containing pension retrieval record. Indicating the retrival has been queued.", ContentTypes = ["application/json"], Type = typeof(PensionsRetrievalRecord))]
     public async Task<IActionResult> PostAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "pensions-retrieval-records")] HttpRequest req, [Microsoft.Azure.Functions.Worker.Http.FromBody] MhpdCommon.Models.MessageBodyModels.PensionRetrievalPayload payload)
     {
         return await ProcessRetrievalRecords(req, "POST", (userSessionId) => peiIntegrationOrchestrator.ScheduleMessagesAsync(payload, userSessionId));
@@ -30,23 +31,25 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger, IP
 
 
     [Function("GetRetrievalRecords")]
-    [OpenApiOperation(operationId: "get-pensions-retrieval-record-for-pension-owner-session",
+    [SwaggerOperation(
+        OperationId = "get-pensions-retrieval-record-for-pension-owner-session",
         Summary = "Get Pensions Retrieval Record",
         Description = "Get the pensions retrieval record that contains the information on the state of a process to retrieve the pensions data for a user session from the PDP ecosystem")]
     [PensionDataOpenApi]
-    [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object), Description = "The OK response message containing pension retrieval record.")]
+    [SwaggerResponse((int)HttpStatusCode.OK, Description = "The OK response message containing pension retrieval record.", ContentTypes = ["application/json"], Type = typeof(PensionsRetrievalRecord))]
     public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "pensions-retrieval-records")] HttpRequest req)
     {
         return await ProcessRetrievalRecords(req, "GET", repository.GetRetrievalRecordAsync);
     }
 
     [Function("DeleteRetrievalRecords")]
-    [OpenApiOperation(operationId: "delete-pensions-retrieval-records-id",
+    [SwaggerOperation(
+        OperationId = "delete-pensions-retrieval-records-id",
         Summary = "Delete Pensions Retrieval Record",
-        Description = "Deletes the given pension retrieval record id.")]
+        Description = "Deletes the given pension retrieval record id")]
     [PensionDataOpenApi(false)]
-    [OpenApiResponseWithoutBody(HttpStatusCode.NoContent, Description = "No Content")]
-    [OpenApiResponseWithoutBody(HttpStatusCode.NotFound, Description = "Not Found")]
+    [SwaggerResponse((int)HttpStatusCode.OK, Description = "No Content")]
+    [SwaggerResponse((int)HttpStatusCode.NotFound, Description = "No Found")]
     public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "pensions-retrieval-records")] HttpRequest req)
     {
         return await ProcessRetrievalRecords(req, "DELETE", async userSessionId =>
