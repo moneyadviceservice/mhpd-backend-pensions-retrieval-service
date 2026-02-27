@@ -1,7 +1,6 @@
 ﻿using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PensionsRetrievalFunction.Repository;
@@ -14,9 +13,6 @@ public class PensionRetrievalRepositoryTests
     private readonly Mock<IHashRedisRepository<PensionsRetrievalRecord>> _mockPensionsRetrievalRecordRepository;
     public PensionRetrievalRepositoryTests()
     {
-        var client = new Mock<CosmosClient>();
-        var iterator = new Mock<FeedIterator<PensionsRetrievalRecord>>();
-
         _mockPensionsRetrievalRecordRepository = new Mock<IHashRedisRepository<PensionsRetrievalRecord>>();
         _repository = new PensionRetrievalRepository(Mock.Of<ILogger<PensionRetrievalRepository>>(), _mockPensionsRetrievalRecordRepository.Object);
     }
