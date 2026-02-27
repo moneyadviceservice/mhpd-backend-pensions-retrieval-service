@@ -39,7 +39,7 @@ public class PensionRetrievalRepositoryTests
 
         //Assert
         Assert.Equal(isObjectReturned, result != null);
-        _mockPensionsRetrievalRecordRepository.Verify(mock => mock.InsertItemAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Exactly(expectedCalls));
+        _mockPensionsRetrievalRecordRepository.Verify(mock => mock.UpsertItemAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Exactly(expectedCalls));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class PensionRetrievalRepositoryTests
         await _repository.UpdatePensionsRetrievalRecordAsync(record);
 
         //Assert
-        _mockPensionsRetrievalRecordRepository.Verify(mock => mock.InsertItemAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Once);
+        _mockPensionsRetrievalRecordRepository.Verify(mock => mock.UpsertItemAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Once);
     }
 
     [Theory]

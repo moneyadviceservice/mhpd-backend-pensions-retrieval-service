@@ -15,7 +15,7 @@ public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logg
         {
             var record = CreateRecord(payload);
 
-            await pensionsRetrievalRecordRepository.InsertItemAsync(record);
+            await pensionsRetrievalRecordRepository.UpsertItemAsync(record);
 
             logger.LogWarning("Created new PensionsRetrievalRecord for user session {UserSessionId}", record.UserSessionId);
             return record;
@@ -26,7 +26,7 @@ public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logg
 
     public Task UpdatePensionsRetrievalRecordAsync(PensionsRetrievalRecord record)
     {
-        return pensionsRetrievalRecordRepository.InsertItemAsync(record);
+        return pensionsRetrievalRecordRepository.UpsertItemAsync(record);
     }
 
     public async Task<PensionsRetrievalRecord?> GetRetrievalRecordAsync(string userSessionId)
