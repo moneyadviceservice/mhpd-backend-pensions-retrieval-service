@@ -24,7 +24,7 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetValue<string>("ApplicationIns
     builder.Services.AddApplicationInsightsTelemetryWorkerService();
 }
 
-builder.Services.AddMhpdCosmosDb(builder.Configuration);
+builder.Services.AddMhpdRedis(builder.Configuration);
 builder.Services.AddMhpdUtilities(builder.Configuration);
 builder.Services.AddMhpdHttpClients(builder.Configuration);
 builder.Services.AddIntegrationServices();
@@ -33,7 +33,6 @@ builder.Services.AddCommonConfigurations(builder.Configuration);
 
 builder.Services.AddScoped<IPensionRetrievalRepository, PensionRetrievalRepository>();
 builder.Services.AddTransient<IPeiIntegrationOrchestrator, PeiIntegrationOrchestrator>();
-builder.Services.AddTransient<ICosmosDbRepository<UserSessionData>, UserSessionDataRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

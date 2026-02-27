@@ -1,19 +1,15 @@
-﻿using Castle.DynamicProxy;
-using MhpdCommon.Models.Configuration;
+﻿using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
 using MhpdCommon.SharedHttpClient;
 using MhpdCommon.TokenValidation;
 using MhpdCommon.Utils;
-using Microsoft.AspNetCore.Builder.Extensions;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
-using System.Linq;
 using System.Net;
 using ResponseMessage = MhpdCommon.Models.MHPDModels.ResponseMessage;
 
@@ -24,7 +20,7 @@ public class PeiIntegrationOrchestratorTests
     private readonly Mock<ILogger<PeiIntegrationOrchestrator>> _logger = new();
     private readonly Mock<IMessagingService> _messagingService = new();
     private readonly Mock<IPensionRetrievalRepository> _repository = new();
-    private readonly Mock<ICosmosDbRepository<UserSessionData>> _mockUserSessionDataRepository = new();
+    private readonly Mock<IHashRedisRepository<UserSessionData>> _mockUserSessionDataRepository = new();
     private const string InboundQueue = "data-in";
     private const string OutboundQueue = "data-out";
 
@@ -38,7 +34,7 @@ public class PeiIntegrationOrchestratorTests
             AccessToken = TokenQueryParams.ValidJwtToken
         };
 
-        _mockUserSessionDataRepository.Setup(x => x.GetByIdAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _mockUserSessionDataRepository.Setup(x => x.GetByUserSessionIdAsync(It.IsAny<string>()))
             .ReturnsAsync(testInstanceData);
     }
 
@@ -82,7 +78,6 @@ public class PeiIntegrationOrchestratorTests
 
         var record = new PensionsRetrievalRecord
         {
-            Id = Guid.NewGuid().ToString(),
             Iss = payload.Iss,
             PeisId = payload.PeisId,
             UserSessionId = payload.UserSessionId
@@ -131,7 +126,6 @@ public class PeiIntegrationOrchestratorTests
 
         var record = new PensionsRetrievalRecord
         {
-            Id = Guid.NewGuid().ToString(),
             Iss = payload.Iss,
             PeisId = payload.PeisId,
             UserSessionId = payload.UserSessionId
@@ -184,7 +178,6 @@ public class PeiIntegrationOrchestratorTests
 
         var record = new PensionsRetrievalRecord
         {
-            Id = Guid.NewGuid().ToString(),
             Iss = payload.Iss,
             PeisId = payload.PeisId,
             UserSessionId = payload.UserSessionId

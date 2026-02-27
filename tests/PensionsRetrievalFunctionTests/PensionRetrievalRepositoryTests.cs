@@ -1,10 +1,8 @@
-﻿using Castle.Core.Logging;
-using MhpdCommon.Models.Configuration;
-using MhpdCommon.Models.MessageBodyModels;
+﻿using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
+using MhpdCommon.Repository;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using PensionsRetrievalFunction.Repository;
 
@@ -12,44 +10,15 @@ namespace PensionsRetrievalFunctionTests;
 
 public class PensionRetrievalRepositoryTests
 {
-    private readonly Mock<Container> _container;
     private readonly PensionRetrievalRepository _repository;
-    private readonly Mock<FeedResponse<PensionsRetrievalRecord>> _readResponse;
-    private readonly Mock<ItemResponse<PensionsRetrievalRecord>> _writeResponse;
-
+    private readonly Mock<IHashRedisRepository<PensionsRetrievalRecord>> _mockPensionsRetrievalRecordRepository;
     public PensionRetrievalRepositoryTests()
     {
-        var configuration = new CosmosBusinessConfiguration
-        {
-            DatabaseId = "PensionDatabase",
-            PensionsRetrievalContainer = "PensionContainer"
-        };
-
-        var options = Options.Create(configuration);
         var client = new Mock<CosmosClient>();
         var iterator = new Mock<FeedIterator<PensionsRetrievalRecord>>();
-        _container = new Mock<Container>();
-        _readResponse = new Mock<FeedResponse<PensionsRetrievalRecord>>();
-        _writeResponse = new Mock<ItemResponse<PensionsRetrievalRecord>>();
 
-        client.Setup(mock => mock.GetContainer(configuration.DatabaseId, configuration.PensionsRetrievalContainer))
-            .Returns(_container.Object);
-
-        _container.Setup(mock => mock.GetItemQueryIterator<PensionsRetrievalRecord>(It.IsAny<QueryDefinition>(), It.IsAny<string>(), It.IsAny<QueryRequestOptions>()))
-            .Returns(iterator.Object);
-        _container.Setup(mock => mock.CreateItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_writeResponse.Object)
-            .Verifiable();
-        _container.Setup(mock => mock.ReplaceItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_writeResponse.Object)
-            .Verifiable();
-        _container.Setup(mock => mock.DeleteAllItemsByPartitionKeyStreamAsync(It.IsAny<PartitionKey>(), null, default))
-            .ReturnsAsync(new Microsoft.Azure.Cosmos.ResponseMessage(System.Net.HttpStatusCode.OK))
-            .Verifiable();
-
-        iterator.Setup(mock => mock.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(_readResponse.Object);
-
-        _repository = new PensionRetrievalRepository(Mock.Of<ILogger<PensionRetrievalRepository>>(), options, client.Object);
+        _mockPensionsRetrievalRecordRepository = new Mock<IHashRedisRepository<PensionsRetrievalRecord>>();
+        _repository = new PensionRetrievalRepository(Mock.Of<ILogger<PensionRetrievalRepository>>(), _mockPensionsRetrievalRecordRepository.Object);
     }
 
     [Theory]
@@ -58,24 +27,23 @@ public class PensionRetrievalRepositoryTests
     public async Task WhenRecordIsQueried_ReturnsNullOrNew(int recordsFound, int expectedCalls, bool isObjectReturned)
     {
         //Arrange
-        _container.Invocations.Clear();
         var message = new PensionRetrievalPayload
         {
             UserSessionId = "Id",
             Iss = "iss",
             PeisId = "PeisId"
         };
-
-        _writeResponse.Setup(mock => mock.Resource).Returns(new PensionsRetrievalRecord());
-        _readResponse.Setup(mock => mock.Count).Returns(recordsFound);
+        if (recordsFound > 0)
+        {
+            _mockPensionsRetrievalRecordRepository.Setup(mock => mock.GetByUserSessionIdAsync(It.IsAny<string>())).ReturnsAsync(new PensionsRetrievalRecord());
+        }
 
         //Act
         var result = await _repository.CreateRecordIfNotExistsAsync(message);
 
         //Assert
         Assert.Equal(isObjectReturned, result != null);
-        _container.Verify(mock => mock.CreateItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<PartitionKey>(),
-            It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedCalls));
+        _mockPensionsRetrievalRecordRepository.Verify(mock => mock.InsertItemAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Exactly(expectedCalls));
     }
 
     [Fact]
@@ -88,8 +56,7 @@ public class PensionRetrievalRepositoryTests
         await _repository.UpdatePensionsRetrievalRecordAsync(record);
 
         //Assert
-        _container.Verify(mock => mock.ReplaceItemAsync(It.IsAny<PensionsRetrievalRecord>(), It.IsAny<string>(), It.IsAny<PartitionKey>(),
-            It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockPensionsRetrievalRecordRepository.Verify(mock => mock.InsertItemAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Once);
     }
 
     [Theory]
@@ -100,9 +67,11 @@ public class PensionRetrievalRepositoryTests
         //Arrange
         List<PensionsRetrievalRecord> records = [];
 
-        if (isRecordInDatabase) records.Add(new PensionsRetrievalRecord());
+        if (isRecordInDatabase)
+        {
 
-        _readResponse.Setup(mock => mock.GetEnumerator()).Returns(records.GetEnumerator);
+            _mockPensionsRetrievalRecordRepository.Setup(mock => mock.GetByUserSessionIdAsync(It.IsAny<string>())).ReturnsAsync(new PensionsRetrievalRecord());
+        }
 
         //Act
         var record = await _repository.GetRetrievalRecordAsync(Guid.NewGuid().ToString());
@@ -122,6 +91,6 @@ public class PensionRetrievalRepositoryTests
         await _repository.DeleteRetrievalRecordsAsync(userSessionId);
 
         //Assert
-        _container.Verify(c => c.DeleteAllItemsByPartitionKeyStreamAsync(It.Is<PartitionKey>(pk => pk == new PartitionKey(userSessionId)), null, default), Times.Once);
+        _mockPensionsRetrievalRecordRepository.Verify(r => r.DeleteByIdUserSessionIdAsync(userSessionId), Times.Once);
     }
 }
