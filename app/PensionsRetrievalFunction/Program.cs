@@ -19,7 +19,7 @@ builder.Configuration
 
 builder.ConfigureFunctionsWebApplication();
 
-if (!string.IsNullOrEmpty(builder.Configuration.GetValue<string>("ApplicationInsights:ConnectionString")))
+if (!string.IsNullOrEmpty(builder.Configuration.GetValue<string>("APPLICATIONINSIGHTS_CONNECTION_STRING")))
 {
     builder.Services.AddApplicationInsightsTelemetryWorkerService();
 }
