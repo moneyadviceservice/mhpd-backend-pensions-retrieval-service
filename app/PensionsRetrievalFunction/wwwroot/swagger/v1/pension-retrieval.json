@@ -1,8 +1,8 @@
 {
-  "openapi": "3.0.4",
+  "swagger": "2.0",
   "info": {
     "title": "MaPS Pensions Retrieval Records",
-    "description": "This service allows a client to retrieve pensions retrieval records for a pension owner session.",
+    "description": "This service allows a client to retrieve pensions retrieval records for a pension owner session",
     "contact": {
       "name": "General Enquires",
       "url": "https://maps.org.uk/en/about-us/contact-us",
@@ -11,89 +11,65 @@
     "license": {
       "name": "Government API License",
       "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
-    },
-    "version": "1.0.0"
-  },
-  "servers": [
-    {
-      "url": "http://localhost:7071"
     }
+  },
+  "host": "localhost:7123",
+  "schemes": [
+    "http"
   ],
   "paths": {
-    "/GetItem": {
-      "get": {
-        "tags": [
-          "items"
-        ],
-        "operationId": "GetItem",
-        "responses": {
-          "200": {
-            "description": "Payload of String",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/pensions-retrieval-records": {
+    "/api/pensions-retrieval-records": {
       "post": {
+        "tags": [
+          "RetrievalRecordFunction"
+        ],
         "summary": "Post Pensions Retrieval Record",
         "description": "Post the pensions retrieval record. This will schedule the messages to be handled at the desired times to poll for new retrieval services",
         "operationId": "post-pensions-retrieval-record-for-pension-owner-session",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
-            "name": "userSessionId",
             "in": "header",
+            "name": "userSessionId",
             "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
-            "name": "mhpdCorrelationId",
             "in": "header",
+            "name": "mhpdCorrelationId",
             "description": "An Id with which to group all logging statements made during a single session",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "type": "string",
+            "format": "uuid"
           }
         ],
         "responses": {
           "200": {
             "description": "The OK response message containing pension retrieval record. Indicating the retrival has been queued.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
+            "schema": {
+              "$ref": "#/definitions/PensionsRetrievalRecord"
             }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
           },
           "504": {
             "description": "Gateway Timeout"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
           "403": {
             "description": "Forbidden"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "502": {
             "description": "Bad Gateway"
+          },
+          "500": {
+            "description": "Internal Server Error"
           },
           "503": {
             "description": "Service Unavailable"
@@ -101,58 +77,56 @@
         }
       },
       "get": {
+        "tags": [
+          "RetrievalRecordFunction"
+        ],
         "summary": "Get Pensions Retrieval Record",
         "description": "Get the pensions retrieval record that contains the information on the state of a process to retrieve the pensions data for a user session from the PDP ecosystem",
         "operationId": "get-pensions-retrieval-record-for-pension-owner-session",
+        "produces": [
+          "application/json"
+        ],
         "parameters": [
           {
-            "name": "userSessionId",
             "in": "header",
+            "name": "userSessionId",
             "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
-            "name": "mhpdCorrelationId",
             "in": "header",
+            "name": "mhpdCorrelationId",
             "description": "An Id with which to group all logging statements made during a single session",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "type": "string",
+            "format": "uuid"
           }
         ],
         "responses": {
           "200": {
             "description": "The OK response message containing pension retrieval record.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
+            "schema": {
+              "$ref": "#/definitions/PensionsRetrievalRecord"
             }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
           },
           "504": {
             "description": "Gateway Timeout"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
           "403": {
             "description": "Forbidden"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "502": {
             "description": "Bad Gateway"
+          },
+          "500": {
+            "description": "Internal Server Error"
           },
           "503": {
             "description": "Service Unavailable"
@@ -160,40 +134,111 @@
         }
       },
       "delete": {
+        "tags": [
+          "RetrievalRecordFunction"
+        ],
         "summary": "Delete Pensions Retrieval Record",
-        "description": "Deletes the given pension retrieval record id.",
+        "description": "Deletes the given pension retrieval record id",
         "operationId": "delete-pensions-retrieval-records-id",
         "parameters": [
           {
-            "name": "userSessionId",
             "in": "header",
+            "name": "userSessionId",
             "description": "The unique id of pension owner session as issued by the requesting system",
             "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "type": "string",
+            "format": "uuid"
           },
           {
-            "name": "mhpdCorrelationId",
             "in": "header",
+            "name": "mhpdCorrelationId",
             "description": "An Id with which to group all logging statements made during a single session",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "type": "string",
+            "format": "uuid"
           }
         ],
         "responses": {
-          "204": {
+          "200": {
             "description": "No Content"
           },
           "404": {
-            "description": "Not Found"
+            "description": "No Found"
           }
         }
       }
     }
   },
-  "components": { }
+  "definitions": {
+    "IActionResult": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "PeiDataModel": {
+      "type": "object",
+      "properties": {
+        "pei": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "x-nullable": true
+        },
+        "retrievalStatus": {
+          "type": "string",
+          "minLength": 1,
+          "x-nullable": true
+        },
+        "retrievalRequestedTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "minLength": 1,
+          "x-nullable": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "PensionsRetrievalRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "userSessionId": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "iss": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "jobStartTimestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "peisId": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "peiRetrievalComplete": {
+          "type": "boolean"
+        },
+        "peiData": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeiDataModel"
+          },
+          "x-nullable": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "tags": [
+    {
+      "name": "RetrievalRecordFunction"
+    }
+  ]
 }
