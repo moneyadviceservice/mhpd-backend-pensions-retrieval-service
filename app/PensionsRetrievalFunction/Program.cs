@@ -3,6 +3,7 @@ using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Models.OpenApi;
 using MhpdCommon.Repository;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,15 +30,15 @@ IHost CreateHost()
         builder.ConfigureFunctionsWebApplication();
         RegisterServices(builder.Services, builder.Configuration);
         builder.ConfigureAspNetCoreMvcIntegration(mvcBuilder =>
-        {
-            mvcBuilder.AddMvcOptions(mvcOptions => { });
-        })
-                .UseAspNetCoreMiddleware(app =>
-                {
-                    app.UseFunctionSwaggerUI();
-                    app.UseSwagger(c => c.OpenApiVersion = OpenApiSpecVersion.OpenApi2_0);
-                    app.UseSwaggerUI();
-                });
+            {
+                mvcBuilder.AddMvcOptions(mvcOptions => { });
+            })
+            .UseAspNetCoreMiddleware(app =>
+            {
+                app.UseFunctionSwaggerUI();
+                app.UseSwagger(c => c.OpenApiVersion = OpenApiSpecVersion.OpenApi2_0);
+                app.UseSwaggerUI();
+            });
 
         return builder.Build();
     }
@@ -53,6 +54,10 @@ IHost CreateHost()
             {
                 RegisterServices(services, hostContext.Configuration);
             })
+            .ConfigureLogging((context, logging) =>
+            {
+                logging.AddMhpdTelemetry(context.Configuration);
+            })
             .Build();
 
     }
@@ -60,10 +65,8 @@ IHost CreateHost()
 
 void RegisterServices(IServiceCollection services, IConfiguration configuration)
 {
-    if (!string.IsNullOrEmpty(configuration.GetValue<string>("APPLICATIONINSIGHTS_CONNECTION_STRING")))
-    {
-        services.AddApplicationInsightsTelemetryWorkerService();
-    }
+    services.AddApplicationInsightsTelemetryWorkerService();
+    services.ConfigureFunctionsApplicationInsights();
 
     services.AddMhpdCosmosDb(configuration);
     services.AddMhpdUtilities(configuration);
