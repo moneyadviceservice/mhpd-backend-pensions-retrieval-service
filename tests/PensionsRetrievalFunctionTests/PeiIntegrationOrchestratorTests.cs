@@ -1,20 +1,17 @@
-﻿using Castle.DynamicProxy;
-using MhpdCommon.Models.Configuration;
+﻿using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
 using MhpdCommon.SharedHttpClient;
 using MhpdCommon.TokenValidation;
 using MhpdCommon.Utils;
-using Microsoft.AspNetCore.Builder.Extensions;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PensionsRetrievalFunction.Orchestration;
 using PensionsRetrievalFunction.Repository;
-using System.Linq;
 using System.Net;
+using static MhpdCommon.Constants.PensionProviderConstants;
 using ResponseMessage = MhpdCommon.Models.MHPDModels.ResponseMessage;
 
 namespace PensionsRetrievalFunctionTests;
@@ -153,6 +150,75 @@ public class PeiIntegrationOrchestratorTests
         _repository.Verify(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Once);
     }
 
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public async Task WhenHttpClientIsExecutedWithPeiUpdate_PeiRecordIsUpdated(bool isUpdated, int expectedUpdateCalls)
+    {
+        // Arrange
+        var apiConfiguration = new PeiOrchestrationSettings
+        {
+            PeiPollingInterval = 5,
+            PeiRetrievalDuration = 60
+        };
+
+        var sbConfiguration = new CommonServiceBusConfiguration
+        {
+            InboundQueue = InboundQueue,
+            OutboundQueue = OutboundQueue
+        };
+
+        var peiResponse = CreateResponse(true, false, isUpdated);
+
+        var client = new Mock<IPeiServiceClient>();
+        client.Setup(mock => mock.GetPeiDataAsync(It.IsAny<PeiRequestModel>())).ReturnsAsync(peiResponse);
+
+        var apiOptions = Options.Create(apiConfiguration);
+        var sbOptions = Options.Create(sbConfiguration);
+
+        var payload = new PensionRetrievalMessagePayload
+        {
+            Iss = "Test ISS",
+            PeisId = Guid.NewGuid().ToString(),
+            UserSessionId = Guid.NewGuid().ToString(),
+            AccessToken = "access_token",
+            AttemptNumber = 1
+        };
+
+        var record = new PensionsRetrievalRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            Iss = payload.Iss,
+            PeisId = payload.PeisId,
+            UserSessionId = payload.UserSessionId,
+            PeiData = [
+                new PeiDataModel
+                {
+                    Description = "Test",
+                    Pei = peiResponse.Peis![0].Pei,
+                    RetrievalRequestedTimestamp = DateTime.UtcNow,
+                    RetrievalStatus = RetrievalStatus.RetrievalRequested,
+                    LastUpdated = isUpdated ? DateTime.UtcNow.AddMinutes(-10) : DateTime.MinValue
+                }
+             ]
+        };
+
+        _repository.Setup(mock => mock.GetRetrievalRecordAsync(payload.UserSessionId)).ReturnsAsync(record);
+
+        var orchestrator = new PeiIntegrationOrchestrator(sbOptions, apiOptions, _messagingService.Object,
+            client.Object, _repository.Object, _logger.Object, _mockUserSessionDataRepository.Object);
+
+        var correlationId = Guid.NewGuid().ToString();
+
+        // Act
+        await orchestrator.RunAsync(payload, correlationId);
+
+        // Assert
+        client.Verify(mock => mock.GetPeiDataAsync(It.Is<PeiRequestModel>(request => request.Iss == payload.Iss && request.PeisId == payload.PeisId && request.UserSessionId == payload.UserSessionId)), Times.Once);
+        _messagingService.Verify(mock => mock.SendMessagesAsync(It.Is<OutboundServiceBusMessage<PensionRequestPayload>[]>(messages => messages.Count() == 1 && messages.Single().Payload.Pei == peiResponse.Peis![0].Pei), OutboundQueue), Times.Exactly(expectedUpdateCalls));
+        _repository.Verify(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Exactly(expectedUpdateCalls));
+    }
+
     [Fact]
     public async Task ScheduleAndProcessingShouldResultInPeiRetrievalCompletedStatus()
     {
@@ -168,7 +234,7 @@ public class PeiIntegrationOrchestratorTests
             OutboundQueue = OutboundQueue
         };
 
-        var client = new Mock<IPeiServiceClient>(); 
+        var client = new Mock<IPeiServiceClient>();
         client.Setup(mock => mock.GetPeiDataAsync(It.IsAny<PeiRequestModel>())).ReturnsAsync(CreateResponse(true, false));
 
         var apiOptions = Options.Create(apiConfiguration);
@@ -192,7 +258,7 @@ public class PeiIntegrationOrchestratorTests
         _repository.Setup(mock => mock.CreateRecordIfNotExistsAsync(It.IsAny<PensionRetrievalPayload>())).ReturnsAsync(record);
 
         // Act 1
-        var resultRecord = await orchestrator.ScheduleMessagesAsync(payload, correlationId);
+        await orchestrator.ScheduleMessagesAsync(payload, correlationId);
 
         // Arrange
         var sentMessages = _messagingService.Invocations.Where(invocation => invocation.Method.Name == nameof(_messagingService.Object.SendMessagesAsync)).SelectMany(invocation => invocation.Arguments.OfType<OutboundServiceBusMessage<PensionRetrievalMessagePayload>[]>().Single()).ToList();
@@ -243,9 +309,9 @@ public class PeiIntegrationOrchestratorTests
         return httpClientMock;
     }
 
-    private static CdaPeisServiceResponseModel CreateResponse(bool withData, bool isErrorOverride)
+    private static CdaPeisServiceResponseModel CreateResponse(bool withData, bool isErrorOverride, bool isUpdated = false)
     {
-        if(isErrorOverride)
+        if (isErrorOverride)
         {
             return new CdaPeisServiceResponseModel
             {
@@ -263,7 +329,8 @@ public class PeiIntegrationOrchestratorTests
                 Description = "Test",
                 Pei = Guid.NewGuid().ToString(),
                 RetrievalRequestedTimestamp = DateTime.UtcNow,
-                RetrievalStatus = "Started"
+                RetrievalStatus = "Started",
+                LastUpdated = isUpdated ? DateTime.UtcNow : DateTime.MinValue
             }
         };
         return new CdaPeisServiceResponseModel

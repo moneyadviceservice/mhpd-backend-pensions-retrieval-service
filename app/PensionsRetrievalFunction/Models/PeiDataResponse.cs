@@ -14,7 +14,7 @@ public class PeiDataResponse
 
     public string? Rpt { get; private set; }
 
-    public void SetRpt(string? rpt)
+    private void SetRpt(string? rpt)
     {
         if (!string.IsNullOrEmpty(rpt))
         {
@@ -22,7 +22,7 @@ public class PeiDataResponse
         }
     }
 
-    public void AddPeiRange(IEnumerable<PeiDataModel> peis)
+    private void AddPeiRange(IEnumerable<PeiDataModel> peis)
     {
         if (peis == null) return;
         peis.ToList().ForEach(pei => _peiData.TryAdd(pei.Pei!, pei));

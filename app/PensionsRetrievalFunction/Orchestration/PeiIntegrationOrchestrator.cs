@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PensionsRetrievalFunction.Models;
 using PensionsRetrievalFunction.Repository;
-using Polly;
 
 namespace PensionsRetrievalFunction.Orchestration;
 
@@ -94,9 +93,8 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 PeisId = payload.PeisId!,
             });
 
-            var fetchedPeis = record.PeiData.Select(p => p.Pei).ToHashSet();
             var messagesToSend = new List<OutboundServiceBusMessage<PensionRequestPayload>>();
-            foreach (var pei in response.Peis!.Where(peis => !fetchedPeis.Contains(peis.Pei)))
+            foreach (var pei in response.Peis!.Where(pei => ShouldFetchPeiData(record, pei)))
             {
                 pei.RetrievalStatus = Constants.RetrievalStatus.Requested;
                 pei.RetrievalRequestedTimestamp = DateTime.UtcNow;
@@ -110,7 +108,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                         Payload = message,
                         CorrelationId = correlationId
                     });
-                    record!.PeiData.Add(pei);
+                    record.PeiData.Add(pei);
                     recordUpdated = true;
                 }
             }
@@ -133,6 +131,13 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 await repository.UpdatePensionsRetrievalRecordAsync(record);
             }
         }
+    }
+
+    private static bool ShouldFetchPeiData(PensionsRetrievalRecord record, PeiDataModel peiData)
+    {
+        var existingPei = record.PeiData.FirstOrDefault(p => p.Pei == peiData.Pei);
+
+        return existingPei == null || existingPei.LastUpdated < peiData.LastUpdated;
     }
 
     private static PensionRequestPayload CreateRequestPayload(PeiDataModel pei, PensionsRetrievalRecord record)
