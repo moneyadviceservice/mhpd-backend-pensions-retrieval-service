@@ -214,6 +214,8 @@ public class PeiIntegrationOrchestratorTests
         await orchestrator.RunAsync(payload, correlationId);
 
         // Assert
+        Assert.Single(record.PeiData);
+
         client.Verify(mock => mock.GetPeiDataAsync(It.Is<PeiRequestModel>(request => request.Iss == payload.Iss && request.PeisId == payload.PeisId && request.UserSessionId == payload.UserSessionId)), Times.Once);
         _messagingService.Verify(mock => mock.SendMessagesAsync(It.Is<OutboundServiceBusMessage<PensionRequestPayload>[]>(messages => messages.Count() == 1 && messages.Single().Payload.Pei == peiResponse.Peis![0].Pei), OutboundQueue), Times.Exactly(expectedUpdateCalls));
         _repository.Verify(mock => mock.UpdatePensionsRetrievalRecordAsync(It.IsAny<PensionsRetrievalRecord>()), Times.Exactly(expectedUpdateCalls));

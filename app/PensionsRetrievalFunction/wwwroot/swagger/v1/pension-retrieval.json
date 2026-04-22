@@ -195,6 +195,10 @@
           "format": "date-time",
           "minLength": 1,
           "x-nullable": true
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "additionalProperties": false

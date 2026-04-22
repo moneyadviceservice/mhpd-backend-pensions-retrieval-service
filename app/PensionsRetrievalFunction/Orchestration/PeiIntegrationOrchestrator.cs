@@ -99,18 +99,26 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 pei.RetrievalStatus = Constants.RetrievalStatus.Requested;
                 pei.RetrievalRequestedTimestamp = DateTime.UtcNow;
 
-                if (peiResponse.TryAdd(pei))
+                var message = CreateRequestPayload(pei, record);
+                logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
+                messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
                 {
-                    var message = CreateRequestPayload(pei, record);
-                    logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
-                    messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
-                    {
-                        Payload = message,
-                        CorrelationId = correlationId
-                    });
-                    record.PeiData.Add(pei);
-                    recordUpdated = true;
+                    Payload = message,
+                    CorrelationId = correlationId
+                });
+
+                int index = record.PeiData.FindIndex(p => p.Pei == pei.Pei);
+
+                if (index >= 0)
+                {
+                    record.PeiData[index] = pei;
                 }
+                else
+                {
+                    record.PeiData.Add(pei);
+                }
+
+                recordUpdated = true;
             }
 
             if (messagesToSend.Count > 0)
