@@ -30,7 +30,11 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
         await Task.Yield();
         if (!idValidator.IsValidGuid(message.CorrelationId))
         {
-            logger.LogCritical("Missing or Invalid correlationId: {CorrelationId}", message.CorrelationId);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.LogCritical("Missing or Invalid correlationId: {CorrelationId}", message.CorrelationId);
+            }
+
             await messageActions.DeadLetterMessageAsync(message, deadLetterReason: $"Missing or Invalid correlationId: {message.CorrelationId}");
             return;
         }
@@ -46,7 +50,11 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
         }
         catch (Exception error)
         {
-            logger.LogCritical(error, "{Message}", error.Message);
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.LogCritical(error, "{Message}", error.Message);
+            }
+
             await messageActions.DeadLetterMessageAsync(message, deadLetterReason: error.Message);
         }
     }

@@ -93,25 +93,32 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 PeisId = payload.PeisId!,
             });
 
-            var fetchedPeis = record.PeiData.Select(p => p.Pei).ToHashSet();
             var messagesToSend = new List<OutboundServiceBusMessage<PensionRequestPayload>>();
-            foreach (var pei in response.Peis!.Where(peis => !fetchedPeis.Contains(peis.Pei)))
+            foreach (var pei in response.Peis!.Where(pei => ShouldFetchPeiData(record, pei)))
             {
                 pei.RetrievalStatus = Constants.RetrievalStatus.Requested;
                 pei.RetrievalRequestedTimestamp = DateTime.UtcNow;
 
-                if (peiResponse.TryAdd(pei))
+                var message = CreateRequestPayload(pei, record);
+                logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
+                messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
                 {
-                    var message = CreateRequestPayload(pei, record);
-                    logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
-                    messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
-                    {
-                        Payload = message,
-                        CorrelationId = correlationId
-                    });
-                    record!.PeiData.Add(pei);
-                    recordUpdated = true;
+                    Payload = message,
+                    CorrelationId = correlationId
+                });
+
+                int index = record.PeiData.FindIndex(p => p.Pei == pei.Pei);
+
+                if (index >= 0)
+                {
+                    record.PeiData[index] = pei;
                 }
+                else
+                {
+                    record.PeiData.Add(pei);
+                }
+
+                recordUpdated = true;
             }
 
             if (messagesToSend.Count > 0)
@@ -132,6 +139,13 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 await repository.UpdatePensionsRetrievalRecordAsync(record);
             }
         }
+    }
+
+    private static bool ShouldFetchPeiData(PensionsRetrievalRecord record, PeiDataModel peiData)
+    {
+        var existingPei = record.PeiData.FirstOrDefault(p => p.Pei == peiData.Pei);
+
+        return existingPei == null || existingPei.LastUpdated < peiData.LastUpdated;
     }
 
     private static PensionRequestPayload CreateRequestPayload(PeiDataModel pei, PensionsRetrievalRecord record)
