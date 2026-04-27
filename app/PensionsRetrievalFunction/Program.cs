@@ -68,6 +68,7 @@ void RegisterServices(IServiceCollection services, IConfiguration configuration)
     services.AddApplicationInsightsTelemetryWorkerService();
     services.ConfigureFunctionsApplicationInsights();
 
+    services.AddMhpdCosmosDb(configuration);
     services.AddMhpdRedis(configuration);
     services.AddMhpdUtilities(configuration);
     services.AddMhpdHttpClients(configuration);
