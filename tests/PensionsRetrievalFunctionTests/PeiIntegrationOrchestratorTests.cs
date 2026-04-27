@@ -185,7 +185,6 @@ public class PeiIntegrationOrchestratorTests
 
         var record = new PensionsRetrievalRecord
         {
-            Id = Guid.NewGuid().ToString(),
             Iss = payload.Iss,
             PeisId = payload.PeisId,
             UserSessionId = payload.UserSessionId,
