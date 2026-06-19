@@ -19,6 +19,7 @@ public class RetrievalRecordFunctionTests
     private readonly Mock<ILogger<RetrievalRecordFunction>> _loggerMock;
     private readonly Mock<IPensionRetrievalRepository> _repositoryMock;
     private readonly Mock<IPeiIntegrationOrchestrator> _peiIntegrationOrchestratorMock;
+    private readonly Mock<IServiceStatusProvider> _serviceStatusProviderMock;
     private readonly RetrievalRecordFunction _function;
 
     public RetrievalRecordFunctionTests()
@@ -34,7 +35,10 @@ public class RetrievalRecordFunctionTests
         _peiIntegrationOrchestratorMock = new Mock<IPeiIntegrationOrchestrator>();
         _peiIntegrationOrchestratorMock.Setup(mock => mock.ScheduleMessagesAsync(It.IsAny<MhpdCommon.Models.MessageBodyModels.PensionRetrievalPayload>(), It.IsAny<string>())).ReturnsAsync(new PensionsRetrievalRecord());
 
-        _function = new RetrievalRecordFunction(_loggerMock.Object, _repositoryMock.Object, _idValidatorMock.Object, _peiIntegrationOrchestratorMock.Object);
+        _serviceStatusProviderMock = new Mock<IServiceStatusProvider>();
+
+        _function = new RetrievalRecordFunction(_loggerMock.Object, _repositoryMock.Object, 
+            _idValidatorMock.Object, _peiIntegrationOrchestratorMock.Object, _serviceStatusProviderMock.Object);
     }
 
     [Theory]
@@ -148,5 +152,26 @@ public class RetrievalRecordFunctionTests
         var result = Assert.IsType<OkResult>(response);
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         _repositoryMock.Verify(mock => mock.DeleteRetrievalRecordsAsync(userSessionId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Function_ShouldReturnServiceStatus()
+    {
+        //Arrange
+        var status = new ServiceStatus
+        {
+            ServiceName = "PensionRetrievalService"
+        };
+
+        _serviceStatusProviderMock.Setup(mock => mock.GetServiceStatus()).Returns(status);
+
+        var mockRequest = new Mock<HttpRequest>();
+
+        //Act
+        var response = await _function.GetStatusAsync(mockRequest.Object);
+
+        //Assert
+        Assert.IsType<OkObjectResult>(response);
+        _serviceStatusProviderMock.Verify(mock => mock.GetServiceStatus(), Times.Once);
     }
 }

@@ -44,7 +44,7 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
 
         try
         {
-            var payload = ExtractAndValidateMessagePayload(message);
+            var payload = await ExtractAndValidateMessagePayloadAsync(message);
             await orchestrator.RunAsync(payload!, message.CorrelationId);
             await messageActions.CompleteMessageAsync(message);
         }
@@ -59,14 +59,14 @@ public class RetrievalFunction(ILogger<RetrievalFunction> logger,
         }
     }
 
-    private PensionRetrievalMessagePayload ExtractAndValidateMessagePayload(ServiceBusReceivedMessage message)
+    private async Task<PensionRetrievalMessagePayload> ExtractAndValidateMessagePayloadAsync(ServiceBusReceivedMessage message)
     {
         var messageBody = Encoding.UTF8.GetString(message.Body);
         PensionRetrievalMessagePayload? payload;
 
         try
         {
-            payload = messageParser.ToPensionRetrievalMessagePayload(messageBody);
+            payload = await messageParser.ToPensionRetrievalMessagePayloadAsync(messageBody);
         }
         catch (AggregateException error)
         {

@@ -166,6 +166,21 @@
           }
         }
       }
+    },
+    "/api/service/status": {
+      "get": {
+        "tags": [
+          "RetrievalRecordFunction"
+        ],
+        "summary": "Get Service Status",
+        "description": "Gets the deployed version information of the service",
+        "operationId": "get-status",
+        "responses": {
+          "200": {
+            "description": "Status Data"
+          }
+        }
+      }
     }
   },
   "definitions": {
