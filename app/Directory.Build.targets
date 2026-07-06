@@ -1,0 +1,35 @@
+<Project>
+	<PropertyGroup>
+		<LocalBranchName>LocalDev</LocalBranchName>
+
+		<Version>0.13.0</Version>
+		<BuildTime>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</BuildTime>
+
+		<PipelineBranch Condition="'$(BUILD_SOURCEBRANCH)' != ''">$([System.String]::Copy('$(BUILD_SOURCEBRANCH)').Replace('refs/heads/', ''))</PipelineBranch>
+		<FinalBranch Condition="'$(PipelineBranch)' != ''">$(PipelineBranch)</FinalBranch>
+		<FinalBranch Condition="'$(PipelineBranch)' == ''">$(LocalBranchName)</FinalBranch>
+
+		<TargetEnvironment Condition="'$(PIPELINE_TARGET_ENV)' != ''">$(PIPELINE_TARGET_ENV)</TargetEnvironment>
+		<TargetEnvironment Condition="'$(PIPELINE_TARGET_ENV)' == ''">$(LocalBranchName)</TargetEnvironment>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>BuildDate</_Parameter1>
+			<_Parameter2>$(BuildTime)</_Parameter2>
+		</AssemblyAttribute>
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>BuildId</_Parameter1>
+			<_Parameter2 Condition="'$(BUILD_BUILDID)' != ''">$(BUILD_BUILDID)</_Parameter2>
+			<_Parameter2 Condition="'$(BUILD_BUILDID)' == ''">local</_Parameter2>
+		</AssemblyAttribute>
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>BuildBranch</_Parameter1>
+			<_Parameter2>$(FinalBranch)</_Parameter2>
+		</AssemblyAttribute>
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>BuildEnvironment</_Parameter1>
+			<_Parameter2>$(TargetEnvironment)</_Parameter2>
+		</AssemblyAttribute>
+	</ItemGroup>
+</Project>

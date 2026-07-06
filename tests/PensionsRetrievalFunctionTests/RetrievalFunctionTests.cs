@@ -17,7 +17,6 @@ public class RetrievalFunctionTests
     private readonly Mock<IMessageParser> _messageParseMock;
     private readonly Mock<ILogger<RetrievalFunction>> _loggerMock;
     private readonly Mock<IPeiIntegrationOrchestrator> _orchestratorMock;
-    private readonly Mock<IPeiIntegrationOrchestrator> _integrationServiceClientMock;
     private readonly RetrievalFunction _function;
 
     public RetrievalFunctionTests()
@@ -38,11 +37,9 @@ public class RetrievalFunctionTests
         _idValidatorMock.Setup(x => x.IsValidPeI(It.IsAny<string>())).Returns(false);
 
         var error = new AggregateException(new Exception("Bad Data"));
-        _messageParseMock.Setup(x => x.ToPensionRetrievalMessagePayload(It.IsAny<string>())).Throws(error);
+        _messageParseMock.Setup(x => x.ToPensionRetrievalMessagePayloadAsync(It.IsAny<string>())).Throws(error);
 
         _orchestratorMock.Setup(mock => mock.RunAsync(It.IsAny<PensionRetrievalMessagePayload>(), It.IsAny<string>())).Verifiable();
-
-        _integrationServiceClientMock = new Mock<IPeiIntegrationOrchestrator>();
 
         _function = new RetrievalFunction(_loggerMock.Object, _idValidatorMock.Object, 
             _messageParseMock.Object, _orchestratorMock.Object);
@@ -97,12 +94,11 @@ public class RetrievalFunctionTests
         ResetInvocations();
 
         //arrange
-        var reason = string.Empty;
         const string file = "ValidPensionRetrievalMessage.json";
         var payload = DataProvider.GetPayload(file);
 
         _idValidatorMock.Setup(x => x.IsValidGuid(It.IsAny<string>())).Returns(true);
-        _messageParseMock.Setup(x => x.ToPensionRetrievalMessagePayload(It.IsAny<string>())).Returns(payload);
+        _messageParseMock.Setup(x => x.ToPensionRetrievalMessagePayloadAsync(It.IsAny<string>())).Returns(Task.FromResult(payload));
 
         var content = DataProvider.GetString(file);
         var message = ServiceBusModelFactory.ServiceBusReceivedMessage(

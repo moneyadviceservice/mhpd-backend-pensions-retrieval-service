@@ -1,0 +1,8 @@
+env                       = "stg"
+location                  = "uksouth"
+subscription_id           = "<stg-subscription-id>"
+product                   = "mhpd"
+hub_firewall_private_ip   = "<stg-hub-firewall-private-ip>"
+sampling_percentage       = 5.0
+http_correlation_protocol = "W3C"
+verbosity                 = "verbose"
