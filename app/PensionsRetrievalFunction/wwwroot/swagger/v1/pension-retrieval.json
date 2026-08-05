@@ -221,10 +221,6 @@
     "PensionsRetrievalRecord": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "x-nullable": true
-        },
         "userSessionId": {
           "type": "string",
           "x-nullable": true

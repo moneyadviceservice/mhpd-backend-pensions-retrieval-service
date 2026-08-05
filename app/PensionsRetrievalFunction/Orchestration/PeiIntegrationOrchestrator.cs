@@ -17,7 +17,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
     IPeiServiceClient client, 
     IPensionRetrievalRepository repository,
     ILogger<PeiIntegrationOrchestrator> logger,
-    ICosmosDbRepository<UserSessionData> userSessionDataRepository) : IPeiIntegrationOrchestrator
+    IHashRedisRepository<UserSessionData> userSessionDataRepository) : IPeiIntegrationOrchestrator
 {
     private readonly CommonServiceBusConfiguration _serviceBusConfiguration = sbOptions.Value;
     private readonly PeiOrchestrationSettings _settings = peiOptions.Value;
@@ -34,7 +34,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
         // Fetch userSessionData and get the access_token that was stored during the pensions-data-retrieval
         var userSessionId = payload.UserSessionId!;
 
-        var userSessionData = await userSessionDataRepository.GetByIdAsync(userSessionId, userSessionId);
+        var userSessionData = await userSessionDataRepository.GetByUserSessionIdAsync(userSessionId);
         if (userSessionData == null)
         {
             logger.LogError("Error retrieving UserSessionData for Id {UserSessionId}", userSessionId);
@@ -154,7 +154,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
         {
             Iss = record.Iss,
             Pei = pei.Pei,
-            PensionRetrievalRecordId = record.Id,
+            PensionRetrievalRecordId = record.UserSessionId,
             UserSessionId = record.UserSessionId
         };
     }

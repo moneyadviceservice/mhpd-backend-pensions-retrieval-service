@@ -69,6 +69,7 @@ void RegisterServices(IServiceCollection services, IConfiguration configuration)
     services.ConfigureFunctionsApplicationInsights();
 
     services.AddMhpdCosmosDb(configuration);
+    services.AddMhpdRedis(configuration);
     services.AddMhpdUtilities(configuration);
     services.AddMhpdHttpClients(configuration);
     services.AddIntegrationServices();
@@ -77,7 +78,6 @@ void RegisterServices(IServiceCollection services, IConfiguration configuration)
 
     services.AddScoped<IPensionRetrievalRepository, PensionRetrievalRepository>();
     services.AddTransient<IPeiIntegrationOrchestrator, PeiIntegrationOrchestrator>();
-    services.AddTransient<ICosmosDbRepository<UserSessionData>, UserSessionDataRepository>();
 
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen(c =>
