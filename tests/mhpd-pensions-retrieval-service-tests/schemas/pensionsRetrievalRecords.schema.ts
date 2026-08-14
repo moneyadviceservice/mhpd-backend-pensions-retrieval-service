@@ -8,7 +8,6 @@ const peiDataSchema = z.object({
 });
 
 export const PensionsRetrievalRecordsSchema = z.object({
-  id: z.string(),
   userSessionId: z.string(),
   iss: z.string(),
   jobStartTimestamp: z.string(),

@@ -1,5 +1,6 @@
 import { APIRequestContext, APIResponse } from '@playwright/test';
 import { test } from './test.lib';
+import { env } from './env.lib';
 
 interface BaseOptions {
   headers?: Record<string, string>;
@@ -60,9 +61,18 @@ export class APIClient {
     readonly baseURL: string,
   ) {}
 
+  private getHeaders(customHeaders?: Record<string, string>): Record<string, string> {
+    return {
+      'User-Agent': env.USER_AGENT,
+      ...customHeaders,
+    };
+  }
+
   async get<T>(endpoint: string, options?: GetOptions): Promise<ServiceResponse<T>> {
+    const mergedHeaders = this.getHeaders(options?.headers);
+
     const response = await this.request.get(this.baseURL + endpoint, {
-      headers: options?.headers,
+      headers: mergedHeaders,
       params: options?.params,
     });
 
@@ -93,8 +103,10 @@ export class APIClient {
   }
 
   async post<T>(endpoint: string, options?: PostOptions): Promise<ServiceResponse<T>> {
+    const mergedHeaders = this.getHeaders(options?.headers);
+
     const response = await this.request.post(this.baseURL + endpoint, {
-      headers: options?.headers,
+      headers: mergedHeaders,
       data: options?.data,
     });
 
@@ -125,8 +137,10 @@ export class APIClient {
   }
 
   async delete<T>(endpoint: string, options?: DeleteOptions): Promise<ServiceResponse<T>> {
+    const mergedHeaders = this.getHeaders(options?.headers);
+
     const response = await this.request.delete(this.baseURL + endpoint, {
-      headers: options?.headers,
+      headers: mergedHeaders,
       params: options?.params,
     });
 

@@ -13,6 +13,7 @@ const envSchema = z.object({
   CODE_VERIFIER: z.string(),
   TICKET: z.string(),
   CI: z.any().optional(),
+  USER_AGENT: z.string(),
 });
 
 type Env = z.infer<typeof envSchema>;

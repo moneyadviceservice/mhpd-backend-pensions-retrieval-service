@@ -20,7 +20,7 @@ export async function pollForPensionRecord(
   while (attempts < maxAttempts) {
     const response = await service.getPensionsRetrievalRecords(headers);
 
-    if (response.status === 200 && response.data?.id) {
+    if (response.status === 200 && response.data?.userSessionId) {
       return response;
     }
 
