@@ -75,7 +75,7 @@ resource "azurerm_api_management_api_diagnostic" "pensions_retrieval_service" {
   api_management_name       = data.azurerm_api_management.this.name
   api_name                  = azurerm_api_management_api.pensions_retrieval_service.name
   api_management_logger_id  = local.api_management_logger_id
-  sampling_percentage       = var.sampling_percentage
+  sampling_percentage       = 100
   always_log_errors         = true
   log_client_ip             = true
   verbosity                 = var.verbosity

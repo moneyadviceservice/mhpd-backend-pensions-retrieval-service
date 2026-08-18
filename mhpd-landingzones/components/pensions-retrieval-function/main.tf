@@ -25,7 +25,7 @@ resource "azurerm_service_plan" "this" {
 }
 
 resource "azurerm_windows_function_app" "this" {
-  name                          = local.func_name
+  name                          = lower(local.func_name)
   resource_group_name           = local.resource_group_name
   location                      = var.location
   service_plan_id               = azurerm_service_plan.this.id
@@ -33,7 +33,7 @@ resource "azurerm_windows_function_app" "this" {
   storage_account_access_key    = azurerm_storage_account.this.primary_access_key
   app_settings                  = local.pensions_retrieval_app_settings
   https_only                    = true
-  public_network_access_enabled = true
+  public_network_access_enabled = false
   virtual_network_subnet_id     = local.enable_vnet_integration ? local.apps_subnet_id : null
   tags                          = {}
 
@@ -47,6 +47,12 @@ resource "azurerm_windows_function_app" "this" {
     name  = local.service_bus_connection_string.name
     type  = local.service_bus_connection_string.type
     value = local.service_bus_connection_string.value
+  }
+
+  connection_string {
+    name  = "RedisConnectionString"
+    type  = "Custom"
+    value = local.redis_connection_string
   }
 
   identity {
@@ -90,7 +96,7 @@ resource "azurerm_windows_function_app_slot" "staging" {
   storage_account_access_key    = azurerm_storage_account.this.primary_access_key
   app_settings                  = local.pensions_retrieval_app_settings
   https_only                    = true
-  public_network_access_enabled = true
+  public_network_access_enabled = false
   virtual_network_subnet_id     = local.apps_subnet_id
 
   connection_string {
@@ -103,6 +109,12 @@ resource "azurerm_windows_function_app_slot" "staging" {
     name  = local.service_bus_connection_string.name
     type  = local.service_bus_connection_string.type
     value = local.service_bus_connection_string.value
+  }
+
+  connection_string {
+    name  = "RedisConnectionString"
+    type  = "Custom"
+    value = local.redis_connection_string
   }
 
   identity {
@@ -138,8 +150,29 @@ resource "azurerm_windows_function_app_slot" "staging" {
   }
 }
 
+resource "azurerm_private_endpoint" "this" {
+  count               = local.pe_enabled ? 1 : 0
+  name                = "pe-${var.product}-pensions-retrieval-${var.env}-${local.loc}"
+  location            = var.location
+  resource_group_name = local.resource_group_name
+  subnet_id           = local.pe_subnet_id
+
+  private_service_connection {
+    name                           = "psc-${var.product}-pensions-retrieval-${var.env}-${local.loc}"
+    private_connection_resource_id = azurerm_windows_function_app.this.id
+    is_manual_connection           = false
+    subresource_names              = ["sites"]
+  }
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
+
+  depends_on = [azurerm_windows_function_app.this]
+}
+
 resource "azurerm_application_insights" "this" {
-  name                = local.func_name
+  name                = lower(local.func_name)
   location            = var.location
   resource_group_name = local.resource_group_name
 
@@ -149,6 +182,33 @@ resource "azurerm_application_insights" "this" {
   workspace_id                          = local.logs_workspace_id
   retention_in_days                     = 90
   daily_data_cap_notifications_disabled = true
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
+}
+
+
+resource "azurerm_private_dns_a_record" "app_service" {
+  count               = local.pe_enabled ? 1 : 0
+  name                = lower(local.func_name)
+  zone_name           = data.azurerm_private_dns_zone.app_service[0].name
+  resource_group_name = "rg-${var.product}-${var.env}-uksouth"
+  ttl                 = 300
+  records             = [azurerm_private_endpoint.this[0].private_service_connection[0].private_ip_address]
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
+}
+
+resource "azurerm_private_dns_a_record" "app_service_scm" {
+  count               = local.pe_enabled ? 1 : 0
+  name                = lower("${local.func_name}.scm")
+  zone_name           = data.azurerm_private_dns_zone.app_service[0].name
+  resource_group_name = "rg-${var.product}-${var.env}-uksouth"
+  ttl                 = 300
+  records             = [azurerm_private_endpoint.this[0].private_service_connection[0].private_ip_address]
 
   lifecycle {
     ignore_changes = [tags]

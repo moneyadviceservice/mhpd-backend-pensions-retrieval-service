@@ -16,10 +16,6 @@ variable "product" {
   default = "mhpd"
 }
 
-variable "sampling_percentage" {
-  type    = number
-  default = 5.0
-}
 
 variable "http_correlation_protocol" {
   type    = string
@@ -29,4 +25,14 @@ variable "http_correlation_protocol" {
 variable "verbosity" {
   type    = string
   default = "verbose"
+}
+
+variable "hub_firewall_private_ip" {
+  type    = string
+  default = null
+}
+
+variable "apim_gateway_url" {
+  type    = string
+  default = null
 }

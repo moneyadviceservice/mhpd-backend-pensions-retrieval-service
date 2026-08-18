@@ -24,3 +24,14 @@ variable "ftps_state" {
 variable "hub_firewall_private_ip" {
   type = string
 }
+
+
+variable "http_correlation_protocol" {
+  type    = string
+  default = "W3C"
+}
+
+variable "verbosity" {
+  type    = string
+  default = "verbose"
+}

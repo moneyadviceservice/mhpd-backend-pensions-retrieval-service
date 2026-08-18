@@ -23,6 +23,7 @@ locals {
   spoke_vnet_name = "vnet-mhpd-${var.env}-spoke-${var.location}"
   apps_subnet_id  = "/subscriptions/${var.subscription_id}/resourceGroups/${local.spoke_rg}/providers/Microsoft.Network/virtualNetworks/${local.spoke_vnet_name}/subnets/mhpd-apps"
   apim_subnet_id  = "/subscriptions/${var.subscription_id}/resourceGroups/${local.spoke_rg}/providers/Microsoft.Network/virtualNetworks/${local.spoke_vnet_name}/subnets/mhpd-apim"
+  pe_subnet_id    = "/subscriptions/${var.subscription_id}/resourceGroups/${local.spoke_rg}/providers/Microsoft.Network/virtualNetworks/${local.spoke_vnet_name}/subnets/mhpd-private-endpoints"
 
   enable_vnet_integration       = local.pe_enabled
   ip_restriction_default_action = local.pe_enabled ? "Deny" : "Allow"
@@ -62,6 +63,8 @@ locals {
   }
 
   apim_base_url = local.pe_enabled ? "https://apim-internal-mhpd-${var.env}-uks.azure-api.net" : "https://apim-mhpd-${var.env}-uks.azure-api.net"
+
+  redis_connection_string = "${data.azurerm_key_vault_secret.redis_endpoint.value}:10000,password=${data.azurerm_key_vault_secret.redis_primary_key.value},ssl=True,abortConnect=False"
 
   pensions_retrieval_app_settings = {
     "APPLICATIONINSIGHTS_CONNECTION_STRING"                   = azurerm_application_insights.this.connection_string
