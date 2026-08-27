@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<LocalBranchName>LocalDev</LocalBranchName>
 
-		<Version>0.13.0</Version>
+		<Version>1.3.0</Version>
 		<BuildTime>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</BuildTime>
 
 		<PipelineBranch Condition="'$(BUILD_SOURCEBRANCH)' != ''">$([System.String]::Copy('$(BUILD_SOURCEBRANCH)').Replace('refs/heads/', ''))</PipelineBranch>
