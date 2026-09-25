@@ -127,3 +127,6 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 
 ### 🔧 Release 1.3.0 — 2026-08-26
 - Moved session storage from Cosmos DB to Redis.
+
+### 🔧 Release 1.5.0 — 2026-09-23
+- Implemented first phase of error code handling.
