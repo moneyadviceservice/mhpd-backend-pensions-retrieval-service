@@ -22,7 +22,8 @@ variable "ftps_state" {
 }
 
 variable "hub_firewall_private_ip" {
-  type = string
+  type    = string
+  default = null
 }
 
 

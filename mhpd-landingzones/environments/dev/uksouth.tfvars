@@ -1,6 +1,6 @@
 env                       = "dev"
 location                  = "uksouth"
-subscription_id           = "<dev-subscription-id>"
+subscription_id           = "7ebd049e-fb93-43c9-b296-02fef67c88b8"
 product                   = "mhpd"
 hub_firewall_private_ip   = ""
 http_correlation_protocol = "W3C"

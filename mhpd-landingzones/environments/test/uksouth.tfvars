@@ -1,6 +1,6 @@
 env                       = "test"
 location                  = "uksouth"
-subscription_id           = "<test-subscription-id>"
+subscription_id           = "5f5b906f-d283-4cac-bc89-b791d6310d65"
 product                   = "mhpd"
 hub_firewall_private_ip   = ""
 http_correlation_protocol = "W3C"

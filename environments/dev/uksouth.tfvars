@@ -1,0 +1,4 @@
+﻿env             = "dev"
+location        = "uksouth"
+subscription_id = "7ebd049e-fb93-43c9-b296-02fef67c88b8"
+product         = "mhpd"

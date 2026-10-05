@@ -33,7 +33,7 @@ resource "azurerm_windows_function_app" "this" {
   storage_account_access_key    = azurerm_storage_account.this.primary_access_key
   app_settings                  = local.pensions_retrieval_app_settings
   https_only                    = true
-  public_network_access_enabled = false
+  public_network_access_enabled = !local.pe_enabled
   virtual_network_subnet_id     = local.enable_vnet_integration ? local.apps_subnet_id : null
   tags                          = {}
 
@@ -60,10 +60,12 @@ resource "azurerm_windows_function_app" "this" {
   }
 
   site_config {
-    ip_restriction_default_action = local.ip_restriction_default_action
-    ftps_state                    = var.ftps_state
-    vnet_route_all_enabled        = local.enable_vnet_integration ? true : null
-    use_32_bit_worker             = false
+    ip_restriction_default_action    = local.ip_restriction_default_action
+    ftps_state                       = var.ftps_state
+    vnet_route_all_enabled           = local.enable_vnet_integration ? true : null
+    use_32_bit_worker                = false
+    app_scale_limit                  = 100
+    runtime_scale_monitoring_enabled = true
 
     application_stack {
       dotnet_version              = "v10.0"

@@ -64,7 +64,7 @@ locals {
 
   apim_base_url = local.pe_enabled ? "https://apim-internal-mhpd-${var.env}-uks.azure-api.net" : "https://apim-mhpd-${var.env}-uks.azure-api.net"
 
-  redis_connection_string = "${data.azurerm_key_vault_secret.redis_endpoint.value}:10000,password=${data.azurerm_key_vault_secret.redis_primary_key.value},ssl=True,abortConnect=False"
+  redis_connection_string = "${data.azurerm_key_vault_secret.redis_endpoint.value}:10000,password=${data.azurerm_key_vault_secret.redis_primary_key.value},ssl=True,abortConnect=False,keepAlive=60,connectTimeout=3000,syncTimeout=3000"
 
   pensions_retrieval_app_settings = {
     "APPLICATIONINSIGHTS_CONNECTION_STRING"                   = azurerm_application_insights.this.connection_string
@@ -87,5 +87,6 @@ locals {
     "CosmosBusinessConfiguration__UserSessionDataContainer"   = "mhpdUserSessionData"
     "CosmosBusinessConfiguration__PensionsRetrievalContainer" = "mhpdPensionsRetrievalRecords"
     "NewtonsoftJsonSchemaLicense"                             = data.azurerm_key_vault_secret.newtonsoft_json_schema_license.value
+    "SCALE_CONTROLLER_LOGGING_ENABLED"                        = "AppInsights:Verbose"
   }
 }
