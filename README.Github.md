@@ -130,3 +130,7 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 
 ### 🔧 Release 1.5.0 — 2026-09-23
 - Implemented first phase of error code handling.
+
+### 🔧 Release 1.6.0 — 2026-10-07
+- Implemented second phase of error code handling.
+- Moved service status tag update to build stage.
