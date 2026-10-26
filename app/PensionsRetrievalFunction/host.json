@@ -4,9 +4,28 @@
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,
-        "excludedTypes": "Request"
-      },
-      "enableLiveMetricsFilters": true
+        "maxTelemetryItemsPerSecond": 20,
+        "excludedTypes": "Exception"
+      }
+    },
+    "LogLevel": {
+      "default": "Information",
+      "Host.Triggers": "Warning",
+      "Host.Triggers.ServiceBus": "Warning",
+      "Host.Results": "Warning",
+      "Function": "Information",
+      "Azure": "Warning",
+      "Azure.Core": "Warning",
+      "Azure.Storage.Blobs": "Error",
+      "Azure.Messaging.ServiceBus": "Error",
+      "Microsoft": "Warning",
+      "Microsoft.Azure.WebJobs": "Warning",
+      "Microsoft.Azure.WebJobs.ServiceBus": "Warning",
+      "Microsoft.Azure.WebJobs.Script": "Warning",
+      "Microsoft.Hosting.Lifetime": "Warning",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware": "Warning",
+      "System.Net.Http.HttpClient": "Warning"
     }
   },
   "extensions": {

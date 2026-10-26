@@ -31,7 +31,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger,
     [SwaggerResponse((int)HttpStatusCode.OK, Description = "The OK response message containing pension retrieval record. Indicating the retrival has been queued.", ContentTypes = ["application/json"], Type = typeof(PensionsRetrievalRecord))]
     public async Task<IActionResult> PostAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "pensions-retrieval-records")] HttpRequest req, [Microsoft.Azure.Functions.Worker.Http.FromBody] MhpdCommon.Models.MessageBodyModels.PensionRetrievalPayload payload)
     {
-        return await ProcessRetrievalRecords(req, "POST", (userSessionId) => peiIntegrationOrchestrator.ScheduleMessagesAsync(payload, userSessionId));
+        return await ProcessRetrievalRecords(req, (userSessionId) => peiIntegrationOrchestrator.ScheduleMessagesAsync(payload, userSessionId));
     }
 
 
@@ -44,7 +44,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger,
     [SwaggerResponse((int)HttpStatusCode.OK, Description = "The OK response message containing pension retrieval record.", ContentTypes = ["application/json"], Type = typeof(PensionsRetrievalRecord))]
     public async Task<IActionResult> GetAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "pensions-retrieval-records")] HttpRequest req)
     {
-        return await ProcessRetrievalRecords(req, "GET", repository.GetRetrievalRecordAsync);
+        return await ProcessRetrievalRecords(req, repository.GetRetrievalRecordAsync);
     }
 
     [Function("DeleteRetrievalRecords")]
@@ -57,7 +57,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger,
     [SwaggerResponse((int)HttpStatusCode.NotFound, Description = "No Found")]
     public async Task<IActionResult> DeleteAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "pensions-retrieval-records")] HttpRequest req)
     {
-        return await ProcessRetrievalRecords(req, "DELETE", async userSessionId =>
+        return await ProcessRetrievalRecords(req, async userSessionId =>
         {
             await repository.DeleteRetrievalRecordsAsync(userSessionId);
             return default(int);
@@ -77,7 +77,7 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger,
         return new OkObjectResult(status);
     }
 
-    private async Task<IActionResult> ProcessRetrievalRecords<T>(HttpRequest req, string source, Func<string, Task<T>> processor)
+    private async Task<IActionResult> ProcessRetrievalRecords<T>(HttpRequest req, Func<string, Task<T>> processor)
     {
         var correlationId = req.Headers[HeaderConstants.CorrelationId].ToString();
         if (string.IsNullOrEmpty(correlationId))
@@ -94,8 +94,6 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger,
 
         using var scope = logger.BeginCorrelationScope(correlationId, Constants.LogSource.Http);
 
-        logger.LogRequestReceived($"{source} for user session Id: {userSessionId}");
-
         if (!validator.IsValidGuid(userSessionId))
         {
             logger.LogError("Unable to service request for sessionId [{SessionId}]: {Reason}", userSessionId, Constants.ResponseType.InvalidSessionId);
@@ -103,7 +101,6 @@ public class RetrievalRecordFunction(ILogger<RetrievalRecordFunction> logger,
         }
 
         var record = await processor(userSessionId);
-        logger.LogResponseSent(record);
 
         return EqualityComparer<T>.Default.Equals(record, default) ? new OkResult() : new OkObjectResult(record);
     }

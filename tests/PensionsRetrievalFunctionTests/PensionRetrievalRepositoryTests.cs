@@ -1,7 +1,6 @@
 ﻿using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
-using Microsoft.Extensions.Logging;
 using Moq;
 using PensionsRetrievalFunction.Repository;
 
@@ -14,7 +13,7 @@ public class PensionRetrievalRepositoryTests
     public PensionRetrievalRepositoryTests()
     {
         _mockPensionsRetrievalRecordRepository = new Mock<IHashRedisRepository<PensionsRetrievalRecord>>();
-        _repository = new PensionRetrievalRepository(Mock.Of<ILogger<PensionRetrievalRepository>>(), _mockPensionsRetrievalRecordRepository.Object);
+        _repository = new PensionRetrievalRepository(_mockPensionsRetrievalRecordRepository.Object);
     }
 
     [Theory]
@@ -61,8 +60,6 @@ public class PensionRetrievalRepositoryTests
     public async Task WhenRecordIsRequested_DatabaseResultIsCorrect(bool isRecordInDatabase)
     {
         //Arrange
-        List<PensionsRetrievalRecord> records = [];
-
         if (isRecordInDatabase)
         {
 

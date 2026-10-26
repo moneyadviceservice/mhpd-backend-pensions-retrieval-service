@@ -1,4 +1,5 @@
-﻿using MhpdCommon.Models.Configuration;
+﻿using MhpdCommon.Extensions;
+using MhpdCommon.Models.Configuration;
 using MhpdCommon.Models.MessageBodyModels;
 using MhpdCommon.Models.MHPDModels;
 using MhpdCommon.Repository;
@@ -31,19 +32,18 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
             return null;
         }
 
-        // Fetch userSessionData and get the access_token that was stored during the pensions-data-retrieval
         var userSessionId = payload.UserSessionId!;
 
         var userSessionData = await userSessionDataRepository.GetByUserSessionIdAsync(userSessionId);
         if (userSessionData == null)
         {
-            logger.LogError("Error retrieving UserSessionData for Id {UserSessionId}", userSessionId);
+            logger.LogCritical("Error retrieving UserSessionData for Id {UserSessionId}", userSessionId);
             return null;
         }
 
         if (string.IsNullOrEmpty(userSessionData.AccessToken))
         {
-            logger.LogError("Error retrieving Access Token from UserSessionData for Id {UserSessionId}", userSessionId);
+            logger.LogCritical("Error retrieving Access Token from UserSessionData for Id {UserSessionId}", userSessionId);
             return null;
         }
 
@@ -100,7 +100,7 @@ public class PeiIntegrationOrchestrator(IOptions<CommonServiceBusConfiguration> 
                 pei.RetrievalRequestedTimestamp = DateTime.UtcNow;
 
                 var message = CreateRequestPayload(pei, record);
-                logger.LogWarning("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
+                logger.LogMhpdInformation("Pension details request sent for PEI {Pei} with retrieval Id {Id}", message.Pei, message.PensionRetrievalRecordId);
                 messagesToSend.Add(new OutboundServiceBusMessage<PensionRequestPayload>
                 {
                     Payload = message,

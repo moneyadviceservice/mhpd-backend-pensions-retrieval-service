@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace PensionsRetrievalFunction.Repository;
 
-public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logger, IHashRedisRepository<PensionsRetrievalRecord> pensionsRetrievalRecordRepository) 
+public class PensionRetrievalRepository(IHashRedisRepository<PensionsRetrievalRecord> pensionsRetrievalRecordRepository) 
     : IPensionRetrievalRepository
 {
     public async Task<PensionsRetrievalRecord?> CreateRecordIfNotExistsAsync(PensionRetrievalPayload payload)
@@ -17,7 +17,6 @@ public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logg
 
             await pensionsRetrievalRecordRepository.UpsertItemAsync(record);
 
-            logger.LogWarning("Created new PensionsRetrievalRecord for user session {UserSessionId}", record.UserSessionId);
             return record;
         }
 
@@ -31,13 +30,7 @@ public class PensionRetrievalRepository(ILogger<PensionRetrievalRepository> logg
 
     public async Task<PensionsRetrievalRecord?> GetRetrievalRecordAsync(string userSessionId)
     {
-        var result = await pensionsRetrievalRecordRepository.GetByUserSessionIdAsync(userSessionId);
-        if(result == null)
-        {
-            logger.LogWarning("No PensionsRetrievalRecord found for user session {UserSessionId}", userSessionId);
-        }
-
-        return result;
+        return await pensionsRetrievalRecordRepository.GetByUserSessionIdAsync(userSessionId);
     }
 
     public Task DeleteRetrievalRecordsAsync(string userSessionId)
