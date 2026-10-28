@@ -134,3 +134,6 @@ Submit a pull request or open an issue for any enhancements or bug fixes.
 ### 🔧 Release 1.6.0 — 2026-10-07
 - Implemented second phase of error code handling.
 - Moved service status tag update to build stage.
+
+### 🔧 Release 1.8.0 — 2026-11-04
+- Optimized telemetry logging.
